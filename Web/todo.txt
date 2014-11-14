@@ -1,20 +1,11 @@
 * make a web page that lets you draw in black / white and converts it to a rot encoded image
- * make it show the pixels for the rot image
-
-* make it so you can load an existing image into the drawing area
-
+* make it show the pixels for the encoded rot image
 * have it decode the rot image to show you what it looks like decoded.
- * maybe able to scale it up or something?
-
-* make sure you can download / save the images drawn to / created
-
-* make it so you can choose how big the source image is
 
 * separate code into multiple files?
 
 * better paint tools in creator?
- * mode: draw, erase
- * tool: paintbrush, paintbucket
+ * mode: draw, fill
  * copy/paste (for multi frames)
  * load image (for source or encoded panel)
 
