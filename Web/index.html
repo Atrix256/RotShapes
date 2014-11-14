@@ -11,6 +11,10 @@ var g_sourcePanel;
 var g_encodedPanel;
 var g_resultPanel;
 var g_mouseDown = false;
+var g_brushSize = 1;
+
+var g_color = 1;
+var g_tool = 0;
 
 var g_clicks = new Array();
 
@@ -76,7 +80,42 @@ function GetMousePos(canvas, evt)
 
 function AddClick(mousePos, drag)
 {
-	g_clicks.push([mousePos, drag]);
+	g_clicks.push([mousePos, drag, g_brushSize]);
+	RedrawAll();
+}
+
+function UndoSource(mousePos, drag)
+{
+	g_clicks.splice(-1,1);
+	RedrawAll();
+}
+
+function ClearSource ()
+{
+	g_clicks = new Array();
+	RedrawAll();
+}
+
+function ColorSource ()
+{
+	g_color = !g_color;
+	document.getElementById('Color').value="Color: "+ (g_color ? "White" : "Black");
+}
+
+function ToolSource ()
+{
+	g_tool = !g_tool;
+	document.getElementById('Tool').value="Tool: "+ (g_tool ? "Bucket" : "Brush");
+}
+
+function BrushSize ()
+{
+	if (g_brushSize < 10)
+		g_brushSize++;
+	else
+		g_brushSize = 1;
+
+	document.getElementById('BrushSize').value="Brush Size: "+g_brushSize;
 }
 
 function OnMouseMove(evt)
@@ -100,7 +139,6 @@ function OnMouseUp(evt)
 	g_mouseDown = false;
 }
 
-//hook up our event listener
 window.addEventListener('load', function(){onPageLoaded();}, false);
 
 function ClearImageBuffer(context)
@@ -119,10 +157,11 @@ function RedrawSource()
 {
 	g_sourcePanel.clear();
 
-	g_sourcePanel.context.strokeStyle='#FFFFFF';	
-	g_sourcePanel.context.lineWidth = 1;    
+	g_sourcePanel.context.strokeStyle='#FFFFFF';
+	g_sourcePanel.context.lineJoin = "round";
 
 	for(var i=0; i < g_clicks.length; ++i) {
+		g_sourcePanel.context.lineWidth = g_clicks[i][2];  
 		g_sourcePanel.context.beginPath();
 
 		if(g_clicks[i][1] && i > 0) {
@@ -179,6 +218,12 @@ function RedrawAll ()
 <br>
 Source:<input type="text" id="SourceWidth" value="256" style="width:4em"/>x<input type="text" id="SourceHeight" value="256" style="width:4em"/>
 <input type=button value="Resize" onClick="ResizeCanvases()"/>
+<br>
+<input type=button id="BrushSize" value="Brush Size: 1" onClick="BrushSize()"/>
+<input type=button id="Color" value="Color: White" onClick="ColorSource()"/>
+<input type=button id="Tool" value="Tool: Brush" onClick="ToolSource()"/>
+<input type=button value="Undo" onClick="UndoSource()"/>
+<input type=button value="Clear" onClick="ClearSource()"/>
 </div>
 
 <div class="panel">

@@ -13,12 +13,9 @@
 * separate code into multiple files?
 
 * better paint tools in creator?
- * undo
- * paintbrush size
- * pauntbucket
- * choose between draw / erase
+ * mode: draw, erase
+ * tool: paintbrush, paintbucket
  * copy/paste (for multi frames)
- * clear
  * load image (for source or encoded panel)
 
 * multiple encoded frames in one image (for sprite sheets and animation)
@@ -28,7 +25,6 @@
 =====
 Later...
 * a playground to investigate the properties of the image (scale, zoom, tint, anti aliasing, etc)
-
-* webgl version?
+ * in webgl?
 
 * share shader code to decode rot images
