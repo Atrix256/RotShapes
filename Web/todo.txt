@@ -5,7 +5,6 @@
 * separate code into multiple files?
 
 * better paint tools in creator?
- * mode: draw, fill
  * copy/paste (for multi frames)
  * load image (for source or encoded panel)
 
@@ -13,9 +12,25 @@
 
 * be able to animate the preview (result)
 
+* for some reason, i can't seem to put alpha into the encoded texture ):
+
+* show size (in bytes) of source and encoded images
+
 =====
 Later...
 * a playground to investigate the properties of the image (scale, zoom, tint, anti aliasing, etc)
  * in webgl?
 
-* share shader code to decode rot images
+* show shader code to decode rot images, based on options selected!
+
+* a playground that lets you layer multiple tinted (and animated?) layers?
+
+* see how this holds up to dxt compression (maybe jpg too?)
+
+=====NOTES=====
+
+? what should happen if result isn't square but source is.  Should it stretch?
+ ! this is controlled by however the UV coordinates are set up.
+
+? fill tool in encoder?
+ ! there is no flood fill in javascript/html5 so would need to code it by hand.  image important should be good enough.
