@@ -1,0 +1,199 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>RotShape Creator</title>
+<style type="text/css">
+body { background-color:grey;}
+canvas.html5 {border:1px solid white;}
+div.panel {float:left; width:33%;}
+</style>
+<script>
+
+var g_sourcePanel;
+var g_encodedPanel;
+var g_resultPanel;
+var g_mouseDown = false;
+
+var g_clicks = new Array();
+
+function onPageLoaded()
+{
+	g_sourcePanel = setupCanvas('Source');
+	g_encodedPanel = setupCanvas('Encoded');
+	g_resultPanel = setupCanvas('Result');
+
+	g_sourcePanel.elem.addEventListener('mousemove', function(evt) {OnMouseMove(evt);RedrawAll();}, false);
+	g_sourcePanel.elem.addEventListener('mousedown', function(evt) {OnMouseDown(evt);RedrawAll();}, false);
+	g_sourcePanel.elem.addEventListener('mouseup', function(evt) {OnMouseUp(evt);RedrawAll();}, false);
+	RedrawAll();
+}
+
+function setupCanvas(name)
+{
+  // Get a reference to the element.
+  var elem = document.getElementById(name);
+
+  // Always check for properties and methods, to make sure your code doesn't break 
+  // in other browsers.
+  if (elem)
+  {
+    if(elem.getContext)
+    {
+      // Get the 2d context.
+      // Remember: you can only initialize one context per element.
+      var context = elem.getContext('2d');
+
+      if (context)
+      {
+      	return {"elem":elem, "context":context, "clear":function(){ClearImageBuffer(context)}, "fill":function(color){FillImageBuffer(context, color)}};
+      }
+      else
+      {
+      	alert("Could not get html5 2d context, your browser doesn't support it! Try firefox or chrome");
+      }
+    }
+    else
+    {
+      alert("The getContext function was missing, your browser doesn't support it! Try firefox or chrome"); 
+    }
+  }
+  else
+  {
+    alert("Could not get element 'MainCanvas'");	
+  }
+
+  return false;
+}
+
+function GetMousePos(canvas, evt)
+{
+	var rect = g_sourcePanel.elem.getBoundingClientRect();
+	var pos =
+	[
+		evt.clientX - rect.left,
+		evt.clientY - rect.top
+	];
+	return pos;
+}
+
+function AddClick(mousePos, drag)
+{
+	g_clicks.push([mousePos, drag]);
+}
+
+function OnMouseMove(evt)
+{
+	if (!g_mouseDown)
+		return;
+
+	var mousePos = GetMousePos(g_sourcePanel.elem, evt);
+	AddClick(mousePos, true);
+}
+
+function OnMouseDown(evt)
+{
+	g_mouseDown = true;
+	var mousePos = GetMousePos(g_sourcePanel.elem, evt);
+	AddClick(mousePos, false);
+}
+
+function OnMouseUp(evt)
+{
+	g_mouseDown = false;
+}
+
+//hook up our event listener
+window.addEventListener('load', function(){onPageLoaded();}, false);
+
+function ClearImageBuffer(context)
+{
+	context.fillStyle   = "#000000";
+	context.fillRect(0, 0, g_sourcePanel.elem.width, g_sourcePanel.elem.height);
+}
+
+function FillImageBuffer(context, color)
+{
+	context.fillStyle   = color;
+	context.fillRect(0, 0, g_sourcePanel.elem.width, g_sourcePanel.elem.height);
+}
+
+function RedrawSource()
+{
+	g_sourcePanel.clear();
+
+	g_sourcePanel.context.strokeStyle='#FFFFFF';	
+	g_sourcePanel.context.lineWidth = 1;    
+
+	for(var i=0; i < g_clicks.length; ++i) {
+		g_sourcePanel.context.beginPath();
+
+		if(g_clicks[i][1] && i > 0) {
+			g_sourcePanel.context.moveTo(g_clicks[i-1][0][0], g_clicks[i-1][0][1]);
+		}
+		else {
+			g_sourcePanel.context.moveTo(g_clicks[i][0][0], g_clicks[i][0][1])
+		}
+
+		g_sourcePanel.context.lineTo(g_clicks[i][0][0], g_clicks[i][0][1]);
+		g_sourcePanel.context.closePath();
+		g_sourcePanel.context.stroke();
+	}
+}
+
+function ResizeCanvases ()
+{
+	g_sourcePanel.elem.width = document.getElementById('SourceWidth').value;
+	g_sourcePanel.elem.height = document.getElementById('SourceHeight').value;
+
+	g_encodedPanel.elem.height = document.getElementById('EncodedHeight').value;
+
+	g_resultPanel.elem.width = document.getElementById('ResultWidth').value;
+	g_resultPanel.elem.height = document.getElementById('ResultHeight').value;	
+
+	RedrawAll();
+}
+
+function RedrawEncoded ()
+{
+	g_encodedPanel.clear();
+}
+
+function RedrawResult ()
+{
+	g_resultPanel.clear();
+}
+
+function RedrawAll ()
+{
+	RedrawEncoded();
+	RedrawSource();
+	RedrawResult();
+}
+
+</script>
+</head>
+<body>
+
+<h1>RotShape Creator</h1>
+
+<div class="panel">
+<canvas class="html5" id="Source" width="256" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+<br>
+Source:<input type="text" id="SourceWidth" value="256" style="width:4em"/>x<input type="text" id="SourceHeight" value="256" style="width:4em"/>
+<input type=button value="Resize" onClick="ResizeCanvases()"/>
+</div>
+
+<div class="panel">
+<canvas class="html5" id="Encoded" width="10" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+<br/>
+Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em"/>
+<input type=button value="Resize" onClick="ResizeCanvases()"/>
+</div>
+
+<div class="panel">
+<canvas class="html5" id="Result" width="256" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+<br/>
+Result:<input type="text" id="ResultWidth" value="256" style="width:4em"/>x<input type="text" id="ResultHeight" value="256" style="width:4em"/>
+<input type=button value="Resize" onClick="ResizeCanvases()"/>
+</div>
+
+</body>
+</html>
