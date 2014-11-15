@@ -14,7 +14,6 @@ var g_mouseDown = false;
 var g_brushSize = 1;
 
 var g_color = 1;
-var g_mode = 0;
 
 var g_clicks = new Array();
 
@@ -80,11 +79,7 @@ function GetMousePos(canvas, evt)
 
 function AddClick(mousePos, drag)
 {
-	// can't drag the fill tool!
-	if (g_mode == 1 && drag == true)
-		return;
-
-	g_clicks.push([mousePos, drag, g_brushSize, g_color, g_mode]);
+	g_clicks.push([mousePos, drag, g_brushSize, g_color]);
 	RedrawAll();
 }
 
@@ -104,12 +99,6 @@ function ColorSource ()
 {
 	g_color = !g_color;
 	document.getElementById('Color').value="Color: "+ (g_color ? "White" : "Black");
-}
-
-function ModeSource ()
-{
-	g_mode = !g_mode;
-	document.getElementById('Mode').value="Mode: "+ (g_mode ? "Fill" : "Draw");
 }
 
 function BrushSize ()
@@ -199,11 +188,73 @@ function ResizeCanvases ()
 function RedrawEncoded ()
 {
 	g_encodedPanel.clear();
+	FillImageBuffer(g_encodedPanel.context, "#A0B0F0");
 }
 
 function RedrawResult ()
 {
+	// clear the panel
 	g_resultPanel.clear();
+
+	// get the encoded image data
+	var encodedWidth = g_encodedPanel.elem.width;
+	var encodedHeight = g_encodedPanel.elem.height;
+	var encodedData = g_encodedPanel.context.getImageData(0,0,encodedWidth,encodedHeight);
+
+	// make image data for the result data
+	var resultWidth = g_resultPanel.elem.width;
+	var resultHeight = g_resultPanel.elem.height;
+	var resultData = g_resultPanel.context.createImageData(resultWidth,resultHeight);
+
+	// make the result
+	for (y = 0; y < resultHeight; ++y) {
+		for (x = 0; x < resultWidth; ++x) {
+
+			// calculate the x,y distance of this pixel from the center of the image, in -1,+1 range
+			var normDistX = (x - (resultWidth/2))/(resultWidth/2);
+			var normDistY = (y - (resultHeight/2))/(resultHeight/2);
+
+			// calculate the positive angle in radians, then into percentage where 0 to 1 equals 0 to 2pi
+			// then take that percentage and map it to which pixel row should be read from the encoded image
+			var normAngle = Math.atan2(normDistY,normDistX);
+			if (normAngle < 0)
+				normAngle += Math.PI * 2;
+			normAngle /= Math.PI*2;
+			normAngle = Math.floor(normAngle * encodedHeight);
+
+			// read the squared distance for that angle from our encoded image, only first frame for now
+			// and make it into the 0 to 1 range
+			var encodedDistSq1 = encodedData.data[((encodedWidth)*normAngle)*4+0] / 255;
+			var encodedDistSq2 = encodedData.data[((encodedWidth)*normAngle)*4+1] / 255;
+			var encodedDistSq3 = encodedData.data[((encodedWidth)*normAngle)*4+2] / 255;
+			var encodedDistSq4 = encodedData.data[((encodedWidth)*normAngle)*4+3] / 255;
+
+			// calculate squared distance
+			var distSq = normDistX*normDistX + normDistY*normDistY;
+
+			// figure out whether we are inside the shape or not
+			var fillValue = 0;
+			if (distSq < encodedDistSq1)
+				fillValue = 0;
+			else if (distSq < encodedDistSq2)
+				fillValue = 255;
+			else if (distSq < encodedDistSq3)
+				fillValue = 0;
+			else if (distSq < encodedDistSq4)
+				fillValue = 255;
+			else
+				fillValue = 0;
+
+			// write to the pixel: R,G,B,A
+			resultData.data[((resultWidth*y)+x)*4+0] = fillValue;
+			resultData.data[((resultWidth*y)+x)*4+1] = fillValue;
+			resultData.data[((resultWidth*y)+x)*4+2] = fillValue;			
+			resultData.data[((resultWidth*y)+x)*4+3] = 255;
+		}
+	}
+
+    // draw the result
+	g_resultPanel.context.putImageData(resultData,0,0);
 }
 
 function RedrawAll ()
@@ -227,7 +278,6 @@ Source:<input type="text" id="SourceWidth" value="256" style="width:4em"/>x<inpu
 <br>
 <input type=button id="BrushSize" value="Brush Size: 1" onClick="BrushSize()"/>
 <input type=button id="Color" value="Color: White" onClick="ColorSource()"/>
-<input type=button id="Mode" value="Mode: Draw" onClick="ModeSource()"/>
 <input type=button value="Undo" onClick="UndoSource()"/>
 <input type=button value="Clear" onClick="ClearSource()"/>
 </div>
