@@ -2,6 +2,8 @@
 * make it show the pixels for the encoded rot image
 * have it decode the rot image to show you what it looks like decoded.
 
+* encode the source image data!
+
 * separate code into multiple files?
 
 * better paint tools in creator?
@@ -10,24 +12,25 @@
 
 * multiple encoded frames in one image (for sprite sheets and animation)
 
-* be able to animate the preview (result)
+* be able to animate the preview (result) for multi frame images
 
-* sample library & research
- * text
- * asian text
- * google icons
- * animated icons
- * get pixel artists involved
+* for some reason, i can't seem to put alpha into the encoded texture ):  actually maybe not true... just cant fill with alpha?
 
-* for some reason, i can't seem to put alpha into the encoded texture ):
+* base image applied before the clicks
+ * this makes it so image loading works, as well as undo
 
-* show size (in bytes) of source and encoded images
+* is there any other place we should be doing bilinear sampling that we arent?
+
+* find a better name than "rot shapes"
+
+* if it takes too long to update the encoded image and result image while you draw, redraw on mouse up, undo, etc, but do it on a timeout of a few seconds after the last one of those events happened
 
 =====
 Later...
 * a playground to investigate the properties of the image (scale, zoom, tint, anti aliasing, etc)
  * in webgl?
  * w/ animation
+ * stroke and drop shadow
 
 * a performance test playground vs a regular texture
 
@@ -39,6 +42,21 @@ Later...
 
 * see how this holds up to dxt compression (maybe jpg too?)
 
+* sample library & research
+ * text
+ * asian text
+ * google icons
+ * animated icons
+ * get pixel artists involved
+
+=====FUTURE WORK=====
+
+* other ways of converting images to the encoded image
+   * like, instead of casting a ray, could do a cone and average distances found or something.
+   * could use bressenham's algorithm if just casting a ray.
+
+* look at being able to do AA in "squared distance space" somehow?
+
 =====NOTES=====
 
 ? what should happen if result isn't square but source is.  Should it stretch?
@@ -47,3 +65,4 @@ Later...
 ? fill tool in encoder?
  ! there is no flood fill in javascript/html5 so would need to code it by hand.  image important should be good enough.
 
+? we dont use the full range of the float (0-1) for each color channel, maybe we can improve that

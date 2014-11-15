@@ -13,6 +13,8 @@ var g_resultPanel;
 var g_mouseDown = false;
 var g_brushSize = 1;
 
+var g_AAmount = 0.01;
+
 var g_color = 1;
 
 var g_clicks = new Array();
@@ -46,7 +48,7 @@ function setupCanvas(name)
 
       if (context)
       {
-      	return {"elem":elem, "context":context, "clear":function(){ClearImageBuffer(context)}, "fill":function(color){FillImageBuffer(context, color)}};
+      	return {"elem":elem, "context":context, "clear":function(){ClearImageBuffer(context,elem.width,elem.height)}, "fill":function(color){FillImageBuffer(context, color,elem.width,elem.height)}};
       }
       else
       {
@@ -134,16 +136,15 @@ function OnMouseUp(evt)
 
 window.addEventListener('load', function(){onPageLoaded();}, false);
 
-function ClearImageBuffer(context)
+function ClearImageBuffer(context, width, height)
 {
-	context.fillStyle   = "#000000";
-	context.fillRect(0, 0, g_sourcePanel.elem.width, g_sourcePanel.elem.height);
+	FillImageBuffer(context,"#000000", width, height);
 }
 
-function FillImageBuffer(context, color)
+function FillImageBuffer(context, color, width, height)
 {
 	context.fillStyle   = color;
-	context.fillRect(0, 0, g_sourcePanel.elem.width, g_sourcePanel.elem.height);
+	context.fillRect(0, 0, width, height);
 }
 
 function RedrawSource()
@@ -187,8 +188,85 @@ function ResizeCanvases ()
 
 function RedrawEncoded ()
 {
-	g_encodedPanel.clear();
-	FillImageBuffer(g_encodedPanel.context, "#A0B0F0");
+	g_encodedPanel.fill("#A0B0F0");
+
+
+	var encodedWidth = g_encodedPanel.elem.width;
+	var encodedHeight = g_encodedPanel.elem.height;
+	var encodedData = g_encodedPanel.context.getImageData(0,0,encodedWidth,encodedHeight);
+
+	for (var y = 0; y < encodedHeight; ++y)
+	{
+		var offset = Math.sin(y/Math.PI)*5;
+		var r = 30+offset;
+		var g = 50+offset;
+		var b = 110+offset;
+		var a = 150+offset;
+		for (var x = 0; x < encodedWidth; ++x)
+		{
+			encodedData.data[((y*encodedWidth)+x)*4+0]=r;
+			encodedData.data[((y*encodedWidth)+x)*4+1]=g;
+			encodedData.data[((y*encodedWidth)+x)*4+2]=b;
+			encodedData.data[((y*encodedWidth)+x)*4+3]=a;
+		}
+	}
+
+
+	g_encodedPanel.context.putImageData(encodedData,0,0);
+}
+
+function GetEncodedPixelChannel (encodedData, encodedWidth, encodedHeight, normAngle, channel)
+{
+	// only doing vertical axis filtering for now.  will need horizontal later
+	// for animations
+	var v1 = Math.floor(normAngle);
+	var v2 = Math.min(v1 + 1, encodedHeight-1);
+	var fract = normAngle % 1;
+
+	var ret =
+		encodedData.data[(encodedWidth*v1)*4+channel] * (1-fract) +
+		encodedData.data[(encodedWidth*v2)*4+channel] * fract;
+
+	return ret / 255;
+}
+
+function GetEncodedPixel (encodedData, encodedWidth, encodedHeight, normAngle)
+{
+	var encodedDistSq1 = GetEncodedPixelChannel(encodedData, encodedWidth, encodedHeight, normAngle, 0);
+	var encodedDistSq2 = GetEncodedPixelChannel(encodedData, encodedWidth, encodedHeight, normAngle, 1);
+	var encodedDistSq3 = GetEncodedPixelChannel(encodedData, encodedWidth, encodedHeight, normAngle, 2);
+	var encodedDistSq4 = GetEncodedPixelChannel(encodedData, encodedWidth, encodedHeight, normAngle, 3);
+
+	return [encodedDistSq1,encodedDistSq2,encodedDistSq3,encodedDistSq4];
+}
+
+function SmoothStep (x)
+{
+	// assumes x is between 0 and 1 already
+	return 3*x*x - 2*x*x*x;
+}
+
+function CalcFillValue(distSq, distSqMin, distSqMax)
+{
+	// Do anti aliasing if we should
+	if (g_AAmount > 0)
+	{
+		var dist = Math.sqrt(distSq);
+		var distMin = Math.sqrt(distSqMin);
+		var distMax = Math.sqrt(distSqMax);
+
+		if (dist - distMin < g_AAmount)
+		{
+			return SmoothStep((dist-distMin)/g_AAmount);
+		}
+		else if (distMax - dist < g_AAmount)
+		{
+			return SmoothStep((distMax-dist)/g_AAmount);
+		}
+	}
+
+	// if no anti aliasing, or we aren't near an edge, return the full value
+	return 1;
 }
 
 function RedrawResult ()
@@ -220,35 +298,42 @@ function RedrawResult ()
 			if (normAngle < 0)
 				normAngle += Math.PI * 2;
 			normAngle /= Math.PI*2;
-			normAngle = Math.floor(normAngle * encodedHeight);
+			normAngle *= encodedHeight;
 
 			// read the squared distance for that angle from our encoded image, only first frame for now
 			// and make it into the 0 to 1 range
-			var encodedDistSq1 = encodedData.data[((encodedWidth)*normAngle)*4+0] / 255;
-			var encodedDistSq2 = encodedData.data[((encodedWidth)*normAngle)*4+1] / 255;
-			var encodedDistSq3 = encodedData.data[((encodedWidth)*normAngle)*4+2] / 255;
-			var encodedDistSq4 = encodedData.data[((encodedWidth)*normAngle)*4+3] / 255;
+			var encodedDistSq = GetEncodedPixel(encodedData, encodedWidth, encodedHeight, normAngle);
 
 			// calculate squared distance
 			var distSq = normDistX*normDistX + normDistY*normDistY;
 
 			// figure out whether we are inside the shape or not
 			var fillValue = 0;
-			if (distSq < encodedDistSq1)
+			if (distSq < encodedDistSq[0])
+			{
 				fillValue = 0;
-			else if (distSq < encodedDistSq2)
-				fillValue = 255;
-			else if (distSq < encodedDistSq3)
+			}
+			else if (distSq < encodedDistSq[1])
+			{
+				fillValue = CalcFillValue(distSq, encodedDistSq[0], encodedDistSq[1]);
+			}
+			else if (distSq < encodedDistSq[2])
+			{
 				fillValue = 0;
-			else if (distSq < encodedDistSq4)
-				fillValue = 255;
+			}
+			else if (distSq < encodedDistSq[3])
+			{
+				fillValue = CalcFillValue(distSq, encodedDistSq[2], encodedDistSq[3]);
+			}
 			else
+			{
 				fillValue = 0;
+			}
 
 			// write to the pixel: R,G,B,A
-			resultData.data[((resultWidth*y)+x)*4+0] = fillValue;
-			resultData.data[((resultWidth*y)+x)*4+1] = fillValue;
-			resultData.data[((resultWidth*y)+x)*4+2] = fillValue;			
+			resultData.data[((resultWidth*y)+x)*4+0] = fillValue*255;
+			resultData.data[((resultWidth*y)+x)*4+1] = fillValue*255;
+			resultData.data[((resultWidth*y)+x)*4+2] = fillValue*255;			
 			resultData.data[((resultWidth*y)+x)*4+3] = 255;
 		}
 	}
@@ -259,9 +344,33 @@ function RedrawResult ()
 
 function RedrawAll ()
 {
+	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
+
 	RedrawEncoded();
 	RedrawSource();
 	RedrawResult();
+
+	var sourceWidth = g_sourcePanel.elem.width;
+	var sourceHeight = g_sourcePanel.elem.height;
+	var sourcePixels = sourceWidth * sourceHeight;
+	document.getElementById('SourceSize').innerHTML=""+sourceWidth+"x"+sourceHeight+"="+sourcePixels+" pixels<br>"+
+		"1 bit per pixel="+(sourcePixels/(8*1024))+"KB<br>"+
+		"1 byte per pixel="+(sourcePixels/1024)+"KB<br>"+
+		"4 bytes per pixel="+(4*sourcePixels/1024)+"KB";
+
+	var encodedWidth = g_encodedPanel.elem.width;
+	var encodedHeight = g_encodedPanel.elem.height;
+	var encodedPixels = encodedWidth*encodedHeight;
+	document.getElementById('EncodedSize').innerHTML=""+encodedWidth+"x"+encodedHeight+"="+encodedPixels+" pixels<br>"+
+		"4 bytes per pixel="+(4*encodedPixels/1024)+"KB";	
+
+	var resultWidth = g_resultPanel.elem.width;
+	var resultHeight = g_resultPanel.elem.height;
+	var resultPixels = resultWidth * resultHeight;
+	document.getElementById('ResultSize').innerHTML=""+resultWidth+"x"+resultHeight+"="+resultPixels+" pixels<br>"+
+		"1 bit per pixel="+(resultPixels/(8*1024))+"KB<br>"+
+		"1 byte per pixel="+(resultPixels/1024)+"KB<br>"+
+		"4 bytes per pixel="+(4*resultPixels/1024)+"KB";		
 }
 
 </script>
@@ -273,27 +382,29 @@ function RedrawAll ()
 <div class="panel">
 <canvas class="html5" id="Source" width="256" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br>
-Source:<input type="text" id="SourceWidth" value="256" style="width:4em"/>x<input type="text" id="SourceHeight" value="256" style="width:4em"/>
-<input type=button value="Resize" onClick="ResizeCanvases()"/>
+Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="SourceHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/>
 <br>
 <input type=button id="BrushSize" value="Brush Size: 1" onClick="BrushSize()"/>
 <input type=button id="Color" value="Color: White" onClick="ColorSource()"/>
 <input type=button value="Undo" onClick="UndoSource()"/>
 <input type=button value="Clear" onClick="ClearSource()"/>
+<div id="SourceSize"></div>
 </div>
 
 <div class="panel">
-<canvas class="html5" id="Encoded" width="10" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+<canvas class="html5" id="Encoded" width="1" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br/>
-Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em"/>
-<input type=button value="Resize" onClick="ResizeCanvases()"/>
+Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/>
+<div id="EncodedSize"></div>
 </div>
 
 <div class="panel">
-<canvas class="html5" id="Result" width="256" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+<canvas class="html5" id="Result" width="512" height="512">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br/>
-Result:<input type="text" id="ResultWidth" value="256" style="width:4em"/>x<input type="text" id="ResultHeight" value="256" style="width:4em"/>
-<input type=button value="Resize" onClick="ResizeCanvases()"/>
+Result:<input type="text" id="ResultWidth" value="512" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="ResultHeight" value="512" style="width:4em" onChange="ResizeCanvases()"/><br>
+AA Distance: <input type="text" id="AADist" value="5" style="width:4em" onChange="RedrawAll();"/> (Smoothsteps this many pixels.  0 to turn off AA)
+<div id="ResultSize"></div>
+
 </div>
 
 </body>
