@@ -13,9 +13,19 @@
 
 * be able to animate the preview (result)
 
+* sample library & research
+ * text
+ * asian text
+ * google icons
+ * animated icons
+ * get pixel artists involved
+
 =====
 Later...
 * a playground to investigate the properties of the image (scale, zoom, tint, anti aliasing, etc)
  * in webgl?
+ * w/ animation
 
-* share shader code to decode rot images
+* a performance test playground vs a regular texture
+
+* share pixel shader code to decode rot images from UV coordinates
