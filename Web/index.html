@@ -11,7 +11,7 @@ var g_sourcePanel;
 var g_encodedPanel;
 var g_resultPanel;
 var g_mouseDown = false;
-var g_brushSize = 1;
+var g_brushSize = 5;
 
 var g_AAmount = 0.01;
 
@@ -19,16 +19,20 @@ var g_color = 1;
 
 var g_clicks = new Array();
 
+var g_redrawTimer = 0;
+
 function onPageLoaded()
 {
 	g_sourcePanel = setupCanvas('Source');
 	g_encodedPanel = setupCanvas('Encoded');
 	g_resultPanel = setupCanvas('Result');
 
-	g_sourcePanel.elem.addEventListener('mousemove', function(evt) {OnMouseMove(evt);RedrawAll();}, false);
-	g_sourcePanel.elem.addEventListener('mousedown', function(evt) {OnMouseDown(evt);RedrawAll();}, false);
-	g_sourcePanel.elem.addEventListener('mouseup', function(evt) {OnMouseUp(evt);RedrawAll();}, false);
-	RedrawAll();
+	g_sourcePanel.elem.addEventListener('mousemove', function(evt) {OnMouseMove(evt);RedrawAll(false);}, false);
+	g_sourcePanel.elem.addEventListener('mousedown', function(evt) {OnMouseDown(evt);RedrawAll(false);}, false);
+	g_sourcePanel.elem.addEventListener('mouseup', function(evt) {OnMouseUp(evt);RedrawAll(false);}, false);
+	RedrawAll(true);
+
+	setInterval(function(){RedrawChecker();}, 250);
 }
 
 function setupCanvas(name)
@@ -82,19 +86,19 @@ function GetMousePos(canvas, evt)
 function AddClick(mousePos, drag)
 {
 	g_clicks.push([mousePos, drag, g_brushSize, g_color]);
-	RedrawAll();
+	RedrawAll(false);
 }
 
 function UndoSource(mousePos, drag)
 {
 	g_clicks.splice(-1,1);
-	RedrawAll();
+	RedrawAll(false);
 }
 
 function ClearSource ()
 {
 	g_clicks = new Array();
-	RedrawAll();
+	RedrawAll(true);
 }
 
 function ColorSource ()
@@ -151,7 +155,6 @@ function RedrawSource()
 {
 	g_sourcePanel.clear();
 
-	
 	g_sourcePanel.context.lineJoin = "round";
 
 	for(var i=0; i < g_clicks.length; ++i) {
@@ -175,6 +178,30 @@ function RedrawSource()
 
 function ResizeCanvases ()
 {
+	// make sure they are whole numbers
+	document.getElementById('SourceWidth').value = Math.floor(document.getElementById('SourceWidth').value);
+	document.getElementById('SourceHeight').value = Math.floor(document.getElementById('SourceHeight').value);
+
+	document.getElementById('EncodedHeight').value = Math.floor(document.getElementById('EncodedHeight').value);
+
+	document.getElementById('ResultWidth').value = Math.floor(document.getElementById('ResultWidth').value);
+	document.getElementById('ResultHeight').value = Math.floor(document.getElementById('ResultHeight').value);
+
+	// make sure sizes dont go below 1
+	if (document.getElementById('SourceWidth').value < 1)
+		document.getElementById('SourceWidth').value = 1;
+	if (document.getElementById('SourceHeight').value < 1)
+		document.getElementById('SourceHeight').value = 1;	
+
+	if (document.getElementById('EncodedHeight').value < 1)
+		document.getElementById('EncodedHeight').value = 1;
+
+	if (document.getElementById('ResultWidth').value < 1)
+		document.getElementById('ResultWidth').value = 1;
+	if (document.getElementById('ResultHeight').value < 1)
+		document.getElementById('ResultHeight').value = 1;
+
+	// resize
 	g_sourcePanel.elem.width = document.getElementById('SourceWidth').value;
 	g_sourcePanel.elem.height = document.getElementById('SourceHeight').value;
 
@@ -183,7 +210,7 @@ function ResizeCanvases ()
 	g_resultPanel.elem.width = document.getElementById('ResultWidth').value;
 	g_resultPanel.elem.height = document.getElementById('ResultHeight').value;	
 
-	RedrawAll();
+	RedrawAll(true);
 }
 
 function RedrawEncoded ()
@@ -342,8 +369,42 @@ function RedrawResult ()
 	g_resultPanel.context.putImageData(resultData,0,0);
 }
 
-function RedrawAll ()
+function BytesString (bytes)
 {
+	if(bytes < 0)
+		return "0 bytes";
+	else if (bytes < 1)
+		return "" + (bytes*8) + " bits";
+	else if (bytes < 1024)
+		return "" + bytes + " bytes";
+	else if (bytes < 1024*1024)
+		return "" + (bytes / 1024) + " KB";
+	else
+		return "" + (bytes / (1024*1024)) + " MB";
+}
+
+function RedrawChecker ()
+{
+	if (g_redrawTimer <= 0)
+		return;
+
+	g_redrawTimer-=250;
+
+	if (g_redrawTimer <= 0)
+		RedrawAll(true);
+}
+
+function RedrawAll (immediate)
+{
+	if (!immediate)
+	{
+		RedrawSource();
+		g_redrawTimer = 500;
+		return;
+	}
+
+	g_redrawTimer = 0;
+
 	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
 
 	RedrawEncoded();
@@ -353,24 +414,24 @@ function RedrawAll ()
 	var sourceWidth = g_sourcePanel.elem.width;
 	var sourceHeight = g_sourcePanel.elem.height;
 	var sourcePixels = sourceWidth * sourceHeight;
-	document.getElementById('SourceSize').innerHTML=""+sourceWidth+"x"+sourceHeight+"="+sourcePixels+" pixels<br>"+
-		"1 bit per pixel="+(sourcePixels/(8*1024))+"KB<br>"+
-		"1 byte per pixel="+(sourcePixels/1024)+"KB<br>"+
-		"4 bytes per pixel="+(4*sourcePixels/1024)+"KB";
+	document.getElementById('SourceSize').innerHTML="<br>"+sourceWidth+"x"+sourceHeight+"="+sourcePixels+" pixels<br>"+
+		"1 bit per pixel="+BytesString(sourcePixels/8)+"<br>"+
+		"1 byte per pixel="+BytesString(sourcePixels)+"<br>"+
+		"4 bytes per pixel="+BytesString(sourcePixels*4);
 
 	var encodedWidth = g_encodedPanel.elem.width;
 	var encodedHeight = g_encodedPanel.elem.height;
-	var encodedPixels = encodedWidth*encodedHeight;
-	document.getElementById('EncodedSize').innerHTML=""+encodedWidth+"x"+encodedHeight+"="+encodedPixels+" pixels<br>"+
-		"4 bytes per pixel="+(4*encodedPixels/1024)+"KB";	
+	document.getElementById('EncodedSize').innerHTML="<br>"+encodedHeight+" pixels per frame<br>"+
+		"4 bytes per pixel="+BytesString(encodedHeight*4)+" per frame<br>"+
+		"x " + encodedWidth + " frames = " + BytesString(encodedHeight*4*encodedWidth);	
 
 	var resultWidth = g_resultPanel.elem.width;
 	var resultHeight = g_resultPanel.elem.height;
 	var resultPixels = resultWidth * resultHeight;
-	document.getElementById('ResultSize').innerHTML=""+resultWidth+"x"+resultHeight+"="+resultPixels+" pixels<br>"+
-		"1 bit per pixel="+(resultPixels/(8*1024))+"KB<br>"+
-		"1 byte per pixel="+(resultPixels/1024)+"KB<br>"+
-		"4 bytes per pixel="+(4*resultPixels/1024)+"KB";		
+	document.getElementById('ResultSize').innerHTML="<br>"+resultWidth+"x"+resultHeight+"="+resultPixels+" pixels<br>"+
+		"1 bit per pixel="+BytesString(resultPixels/8)+"<br>"+
+		"1 byte per pixel="+BytesString(resultPixels)+"<br>"+
+		"4 bytes per pixel="+BytesString(resultPixels*4);		
 }
 
 </script>
@@ -384,7 +445,7 @@ function RedrawAll ()
 <br>
 Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="SourceHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/>
 <br>
-<input type=button id="BrushSize" value="Brush Size: 1" onClick="BrushSize()"/>
+<input type=button id="BrushSize" value="Brush Size: 5" onClick="BrushSize()"/>
 <input type=button id="Color" value="Color: White" onClick="ColorSource()"/>
 <input type=button value="Undo" onClick="UndoSource()"/>
 <input type=button value="Clear" onClick="ClearSource()"/>
@@ -402,7 +463,7 @@ Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em" onCh
 <canvas class="html5" id="Result" width="512" height="512">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br/>
 Result:<input type="text" id="ResultWidth" value="512" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="ResultHeight" value="512" style="width:4em" onChange="ResizeCanvases()"/><br>
-AA Distance: <input type="text" id="AADist" value="5" style="width:4em" onChange="RedrawAll();"/> (Smoothsteps this many pixels.  0 to turn off AA)
+AA Distance: <input type="text" id="AADist" value="5" style="width:4em" onChange="RedrawAll(true);"/> (Smoothsteps this many pixels.  0 to turn off AA)
 <div id="ResultSize"></div>
 
 </div>

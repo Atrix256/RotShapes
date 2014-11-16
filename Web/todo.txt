@@ -1,10 +1,5 @@
-* make a web page that lets you draw in black / white and converts it to a rot encoded image
-* make it show the pixels for the encoded rot image
-* have it decode the rot image to show you what it looks like decoded.
 
 * encode the source image data!
-
-* separate code into multiple files?
 
 * better paint tools in creator?
  * copy/paste (for multi frames)
@@ -23,7 +18,10 @@
 
 * find a better name than "rot shapes"
 
-* if it takes too long to update the encoded image and result image while you draw, redraw on mouse up, undo, etc, but do it on a timeout of a few seconds after the last one of those events happened
+* doing a single click with the paintbrush doesn't make a dot
+
+* some way to see the current frame's encoded pixel's better? (cause it's interesting!)
+ * maybe have another bar where it shows it 100x wide.
 
 =====
 Later...
@@ -48,6 +46,8 @@ Later...
  * google icons
  * animated icons
  * get pixel artists involved
+
+ * encode by looping through each pixel in the source, and keeping track of white/black intervals for each angle bucket.
 
 =====FUTURE WORK=====
 
