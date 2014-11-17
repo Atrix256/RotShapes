@@ -9,11 +9,13 @@ div.panel {float:left; width:33%;}
 
 var g_sourcePanel;
 var g_encodedPanel;
+var g_encoded2Panel;
 var g_resultPanel;
 var g_mouseDown = false;
 var g_brushSize = 5;
 
 var g_AAmount = 0.01;
+var g_bilinearFilter = false;
 
 var g_color = 1;
 
@@ -25,6 +27,7 @@ function onPageLoaded()
 {
 	g_sourcePanel = setupCanvas('Source');
 	g_encodedPanel = setupCanvas('Encoded');
+	g_encoded2Panel = setupCanvas('Encoded2');
 	g_resultPanel = setupCanvas('Result');
 
 	g_sourcePanel.elem.addEventListener('mousemove', function(evt) {OnMouseMove(evt);RedrawAll(false);}, false);
@@ -206,6 +209,7 @@ function ResizeCanvases ()
 	g_sourcePanel.elem.height = document.getElementById('SourceHeight').value;
 
 	g_encodedPanel.elem.height = document.getElementById('EncodedHeight').value;
+	g_encoded2Panel.elem.height = document.getElementById('EncodedHeight').value;
 
 	g_resultPanel.elem.width = document.getElementById('ResultWidth').value;
 	g_resultPanel.elem.height = document.getElementById('ResultHeight').value;	
@@ -215,32 +219,12 @@ function ResizeCanvases ()
 
 function AddEntry (bucket, distSq, isWhite)
 {
-	/*
-	if (bucket.length == 0)
-	{
-		bucket.push([distSq, isWhite]);
-		return bucket;
-	}
-
-	if (bucket[0][0] > distSq)
-	{
-		bucket.splice(0,0,[distSq, isWhite]);
-		return bucket;
-	}
-
-	var i = 0;
-	while (bucket[i+1][0] < distSq)
-		i++;
-	bucket.splice(i,0,[distSq, isWhite]);
+	bucket.push({"distSq":distSq,"isWhite":isWhite});
 	return bucket;
-	*/
+}
 
-
-	if (!isWhite)
-		return bucket;
-
-	bucket = [distSq, isWhite];
-	return bucket;
+function SortBuckets(a,b) {
+	return a.distSq - b.distSq;
 }
 
 function RedrawEncoded ()
@@ -249,6 +233,10 @@ function RedrawEncoded ()
 	var encodedWidth = g_encodedPanel.elem.width;
 	var encodedHeight = g_encodedPanel.elem.height;
 	var encodedData = g_encodedPanel.context.getImageData(0,0,encodedWidth,encodedHeight);
+
+	var encoded2Width = g_encoded2Panel.elem.width;
+	var encoded2Height = g_encoded2Panel.elem.height;
+	var encoded2Data = g_encoded2Panel.context.getImageData(0,0,encoded2Width,encoded2Height);
 
 	var sourceWidth = g_sourcePanel.elem.width;
 	var sourceHeight = g_sourcePanel.elem.height;
@@ -284,30 +272,60 @@ function RedrawEncoded ()
 	// convert the encoded buckets to pixels (clear out pixels at same time, and remove clearing from above)
 	for (var y = 0; y < encodedHeight; ++y)
 	{
-		// if the data doesn't start with a black entry, add one
-		//if (encodedBuckets[y].length == 0 || encodedBuckets[y][1] == true)
+		// make sure there's a black entry at 0 and 1
+		encodedBuckets[y].splice(0,0,{"distSq":0,"isWhite":false});
+		encodedBuckets[y].push({"distSq":1,"isWhite":false});		
 
-		// if the data doesn't end with a black entry, add one
+		// sort the entries by distance
+		encodedBuckets[y].sort(SortBuckets);		
 
+		// make a table of the boundary changes for samples
+		var boundaries = new Array();
+		var lastIsWhite = true;
+		for (var index = 0; index < encodedBuckets[y].length; index++)
+		{
+			if (index == 0 || lastIsWhite != encodedBuckets[y][index].isWhite)
+			{
+				lastIsWhite = encodedBuckets[y][index].isWhite;
+				boundaries.push(encodedBuckets[y][index].distSq);
+			}
+		}
+
+		// encode distances for angle!
+		var R = boundaries.length > 1 ? Math.min(Math.floor(boundaries[1]*255),255) : 255;
+		var G = boundaries.length > 2 ? Math.min(Math.floor(boundaries[2]*255),255) : 255;
+		var B = boundaries.length > 3 ? Math.min(Math.floor(boundaries[3]*255),255) : 255;
+		var A = boundaries.length > 4 ? Math.min(Math.floor(boundaries[4]*255),255) : 255;
+
+		// apply color
 		for (var x = 0; x < encodedWidth; ++x)
 		{
-			if (encodedBuckets[y].length > 0)
-				encodedData.data[(y*encodedWidth+x)*4+0] = Math.floor(encodedBuckets[y][0]*255);
-			else
-				encodedData.data[(y*encodedWidth+x)*4+0] = 255;
-
-			encodedData.data[(y*encodedWidth+x)*4+1] = 255;
-			encodedData.data[(y*encodedWidth+x)*4+2] = 255;
-			encodedData.data[(y*encodedWidth+x)*4+3] = 255;
+			encodedData.data[(y*encodedWidth+x)*4+0] = R;
+			encodedData.data[(y*encodedWidth+x)*4+1] = G;
+			encodedData.data[(y*encodedWidth+x)*4+2] = B;
+			encodedData.data[(y*encodedWidth+x)*4+3] = A;
 		}
+
+		for (var x = 0; x < encoded2Width; ++x)
+		{
+			encoded2Data.data[(y*encoded2Width+x)*4+0] = R;
+			encoded2Data.data[(y*encoded2Width+x)*4+1] = G;
+			encoded2Data.data[(y*encoded2Width+x)*4+2] = B;
+			encoded2Data.data[(y*encoded2Width+x)*4+3] = A;
+		}		
 	}
 
 	// copy the pixels in
 	g_encodedPanel.context.putImageData(encodedData,0,0);
+	g_encoded2Panel.context.putImageData(encoded2Data,0,0);
 }
 
 function GetEncodedPixelChannel (encodedData, encodedWidth, encodedHeight, normAngle, channel)
 {
+	// do simple texture lookup if bilinear filtering isn't on
+	if (!g_bilinearFilter)
+		return encodedData.data[(encodedWidth*Math.floor(normAngle))*4+channel] / 255;
+
 	// only doing vertical axis filtering for now.  will need horizontal later
 	// for animations
 	var v1 = Math.floor(normAngle);
@@ -470,6 +488,7 @@ function RedrawAll (immediate)
 	g_redrawTimer = 0;
 
 	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
+	g_bilinearFilter = document.getElementById('BilinearFilter').checked;
 
 	RedrawSource();
 	RedrawEncoded();
@@ -485,9 +504,8 @@ function RedrawAll (immediate)
 
 	var encodedWidth = g_encodedPanel.elem.width;
 	var encodedHeight = g_encodedPanel.elem.height;
-	document.getElementById('EncodedSize').innerHTML="<br>"+encodedHeight+" pixels per frame<br>"+
-		"4 bytes per pixel="+BytesString(encodedHeight*4)+" per frame<br>"+
-		"x " + encodedWidth + " frames = " + BytesString(encodedHeight*4*encodedWidth);	
+	document.getElementById('EncodedSize').innerHTML="<br>"+encodedHeight+" pixels<br>"+
+		"4 bytes per pixel="+BytesString(encodedHeight*4)+"<br>";
 
 	var resultWidth = g_resultPanel.elem.width;
 	var resultHeight = g_resultPanel.elem.height;
@@ -517,19 +535,22 @@ Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChang
 </div>
 
 <div class="panel">
-<canvas class="html5" id="Encoded" width="1" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+<canvas class="html5" id="Result" width="256" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br/>
-Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/>
-<div id="EncodedSize"></div>
+Result:<input type="text" id="ResultWidth" value="256" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="ResultHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/><br>
+Bilinear Filter Encoded Data: <input type=checkbox id="BilinearFilter" onChange="RedrawAll(true);"/><br>
+AA Distance: <input type="text" id="AADist" value="5" style="width:4em" onChange="RedrawAll(true);"/> (Smoothsteps this many pixels.  0 to turn off AA)
+<div id="ResultSize"></div>
 </div>
 
 <div class="panel">
-<canvas class="html5" id="Result" width="512" height="512">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+actual:
+<canvas class="html5" id="Encoded" width="1" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
+enlarged:
+<canvas class="html5" id="Encoded2" width="100" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br/>
-Result:<input type="text" id="ResultWidth" value="512" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="ResultHeight" value="512" style="width:4em" onChange="ResizeCanvases()"/><br>
-AA Distance: <input type="text" id="AADist" value="5" style="width:4em" onChange="RedrawAll(true);"/> (Smoothsteps this many pixels.  0 to turn off AA)
-<div id="ResultSize"></div>
-
+Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/>
+<div id="EncodedSize"></div>
 </div>
 
 </body>

@@ -1,51 +1,51 @@
+* make the circle large enough to hold the whole square (hypotneuse!)
 
-* encode the source image data!
- * encode by looping through each pixel in the source, and keeping track of white/black intervals for each angle bucket.
+* think about which samples should be taken when there are too many!
+ * maybe prefer thicker over thinner
+ * or take inside and outside and get rid of middle
+ * solve it!
 
 * better paint tools in creator?
  * copy/paste (for multi frames)
  * load image (for source or encoded panel)
 
-* multiple encoded frames in one image (for sprite sheets and animation)
-
-* be able to animate the preview (result) for multi frame images
-
-* for some reason, i can't seem to put alpha into the encoded texture ):  actually maybe not true... just cant fill with alpha?
+* make a diff tool to combine multiple single frame images into a multi frame image
+ * multiple encoded frames in one image (for sprite sheets and animation)
+ * be able to animate the preview (result) for multi frame images
+  * maybe only bilinear filter on x axis
 
 * base image applied before the clicks
  * this makes it so image loading works, as well as undo
-
-* is there any other place we should be doing bilinear sampling that we arent?
 
 * find a better name than "rot shapes"
 
 * doing a single click with the paintbrush doesn't make a dot
 
-* some way to see the current frame's encoded pixel's better? (cause it's interesting!)
- * maybe have another bar where it shows it 100x wide.
-
 * how to handle when drawing in corners? the image should support that so maybe we need to make each channel additive instead of add up to 1.
  * or maybe we "denormalize" it somehow so that the distances are extended to a rectangle?
 
- * how do we handle the center pixel? angle = ??!! atan2 failure i think.
+* how do we handle the center pixel? angle = ??!! atan2 failure i think.
 
- * protect against letters in the input boxes somehow (makes NAN)
- * make sure the AA pixel distance is protected against < 1 and letters (NANs)
+* protect against letters in the input boxes somehow (makes NAN)
+* make sure the AA pixel distance is protected against < 1 and letters (NANs)
 
- * bilinear filtering screws things up a bit.  it makes things jut out from the origin.  maybe only do bilinear on x axis or something if it's a problem.
+* double check that we aren't ever reading out of bounds.  like esp in the results reading of the encoded image
 
- * double check that we aren't ever reading out of bounds.  like esp in the results reading of the encoded image
-
- * only keep the last sequence. let features towards the middle of the data drop out?
-
- * Only 256 distances. Skewed somehow by squared distance (good or bad??).
-   * Bilinear filtering should help fake more distances maybe? Texture repeat mode should help negatives and wrap around
-
-* make the circle large enough to hold the whole square (hypotneuse!)
+* Only 256 distances. Skewed somehow by squared distance (good or bad??).
+  * Bilinear filtering should help fake more distances maybe? Texture repeat mode should help negatives and wrap around
+  * investigate
 
 * how can you AA horizontally?
 
-* encoding: Just add to array, sort by dist, remove redundant data, use for encoding
+* test / talk about: rectangular shapes both in source and dest
+
+* instead of only making boundary samples when making encoded image, maybe should try lerping between boundaries!
+
+* try unsquared distance. compare / contrast
+
+* encoding might want to write to multiple buckets? not sure... need to think about it
+
+* organize code
 
 =====
 Later...
@@ -87,7 +87,10 @@ Later...
  * 2 color channels = out, in, out (1 spiral)
  * 1 color channel = in (could describe a convex shape)
 
+* heuristic for which features to keep (middle, thickest, inside, outside, etc)
+
 =====NOTES=====
+
 
 ? what should happen if result isn't square but source is.  Should it stretch?
  ! this is controlled by however the UV coordinates are set up.
