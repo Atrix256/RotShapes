@@ -1,5 +1,6 @@
 
 * encode the source image data!
+ * encode by looping through each pixel in the source, and keeping track of white/black intervals for each angle bucket.
 
 * better paint tools in creator?
  * copy/paste (for multi frames)
@@ -22,6 +23,29 @@
 
 * some way to see the current frame's encoded pixel's better? (cause it's interesting!)
  * maybe have another bar where it shows it 100x wide.
+
+* how to handle when drawing in corners? the image should support that so maybe we need to make each channel additive instead of add up to 1.
+ * or maybe we "denormalize" it somehow so that the distances are extended to a rectangle?
+
+ * how do we handle the center pixel? angle = ??!! atan2 failure i think.
+
+ * protect against letters in the input boxes somehow (makes NAN)
+ * make sure the AA pixel distance is protected against < 1 and letters (NANs)
+
+ * bilinear filtering screws things up a bit.  it makes things jut out from the origin.  maybe only do bilinear on x axis or something if it's a problem.
+
+ * double check that we aren't ever reading out of bounds.  like esp in the results reading of the encoded image
+
+ * only keep the last sequence. let features towards the middle of the data drop out?
+
+ * Only 256 distances. Skewed somehow by squared distance (good or bad??).
+   * Bilinear filtering should help fake more distances maybe? Texture repeat mode should help negatives and wrap around
+
+* make the circle large enough to hold the whole square (hypotneuse!)
+
+* how can you AA horizontally?
+
+* encoding: Just add to array, sort by dist, remove redundant data, use for encoding
 
 =====
 Later...
@@ -47,7 +71,9 @@ Later...
  * animated icons
  * get pixel artists involved
 
- * encode by looping through each pixel in the source, and keeping track of white/black intervals for each angle bucket.
+* test in IE, Firefox, and on mac
+
+* benchmark vs other methods (regular textures & distance textures)
 
 =====FUTURE WORK=====
 
@@ -56,6 +82,10 @@ Later...
    * could use bressenham's algorithm if just casting a ray.
 
 * look at being able to do AA in "squared distance space" somehow?
+
+* could decrease # of color channels if you don't need all this info.
+ * 2 color channels = out, in, out (1 spiral)
+ * 1 color channel = in (could describe a convex shape)
 
 =====NOTES=====
 

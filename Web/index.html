@@ -32,7 +32,7 @@ function onPageLoaded()
 	g_sourcePanel.elem.addEventListener('mouseup', function(evt) {OnMouseUp(evt);RedrawAll(false);}, false);
 	RedrawAll(true);
 
-	setInterval(function(){RedrawChecker();}, 250);
+	setInterval(function(){RedrawChecker();}, 100);
 }
 
 function setupCanvas(name)
@@ -213,32 +213,96 @@ function ResizeCanvases ()
 	RedrawAll(true);
 }
 
+function AddEntry (bucket, distSq, isWhite)
+{
+	/*
+	if (bucket.length == 0)
+	{
+		bucket.push([distSq, isWhite]);
+		return bucket;
+	}
+
+	if (bucket[0][0] > distSq)
+	{
+		bucket.splice(0,0,[distSq, isWhite]);
+		return bucket;
+	}
+
+	var i = 0;
+	while (bucket[i+1][0] < distSq)
+		i++;
+	bucket.splice(i,0,[distSq, isWhite]);
+	return bucket;
+	*/
+
+
+	if (!isWhite)
+		return bucket;
+
+	bucket = [distSq, isWhite];
+	return bucket;
+}
+
 function RedrawEncoded ()
 {
-	g_encodedPanel.fill("#A0B0F0");
-
-
+	// get access to the encoded and source image sizes
 	var encodedWidth = g_encodedPanel.elem.width;
 	var encodedHeight = g_encodedPanel.elem.height;
 	var encodedData = g_encodedPanel.context.getImageData(0,0,encodedWidth,encodedHeight);
 
+	var sourceWidth = g_sourcePanel.elem.width;
+	var sourceHeight = g_sourcePanel.elem.height;
+	var sourceData = g_sourcePanel.context.getImageData(0,0,sourceWidth,sourceHeight);
+
+	// allocate space for our encoded data buckets
+	var encodedBuckets = new Array(encodedHeight);
 	for (var y = 0; y < encodedHeight; ++y)
+		encodedBuckets[y] = new Array();
+
+	// loop through the source data
+	for (var y = 0; y < sourceHeight; ++y)
 	{
-		var offset = Math.sin(y/Math.PI)*5;
-		var r = 30+offset;
-		var g = 50+offset;
-		var b = 110+offset;
-		var a = 150+offset;
-		for (var x = 0; x < encodedWidth; ++x)
+		for (var x = 0; x < sourceWidth; ++x)
 		{
-			encodedData.data[((y*encodedWidth)+x)*4+0]=r;
-			encodedData.data[((y*encodedWidth)+x)*4+1]=g;
-			encodedData.data[((y*encodedWidth)+x)*4+2]=b;
-			encodedData.data[((y*encodedWidth)+x)*4+3]=a;
+			var isWhite = (sourceData.data[(y*sourceWidth+x)*4] > 0);
+
+			var angle = Math.atan2(y-sourceHeight/2,x-sourceWidth/2);
+			if (angle < 0)
+				angle += Math.PI * 2;
+			angle /= Math.PI*2;
+			angle *= encodedHeight;
+			angle = Math.floor(angle);
+
+			var normDistX = (x - (sourceWidth/2))/(sourceWidth/2);
+			var normDistY = (y - (sourceHeight/2))/(sourceHeight/2);	
+			var distSq = normDistX*normDistX + normDistY*normDistY;
+
+			encodedBuckets[angle] = AddEntry(encodedBuckets[angle], distSq, isWhite);
 		}
 	}
 
+	// convert the encoded buckets to pixels (clear out pixels at same time, and remove clearing from above)
+	for (var y = 0; y < encodedHeight; ++y)
+	{
+		// if the data doesn't start with a black entry, add one
+		//if (encodedBuckets[y].length == 0 || encodedBuckets[y][1] == true)
 
+		// if the data doesn't end with a black entry, add one
+
+		for (var x = 0; x < encodedWidth; ++x)
+		{
+			if (encodedBuckets[y].length > 0)
+				encodedData.data[(y*encodedWidth+x)*4+0] = Math.floor(encodedBuckets[y][0]*255);
+			else
+				encodedData.data[(y*encodedWidth+x)*4+0] = 255;
+
+			encodedData.data[(y*encodedWidth+x)*4+1] = 255;
+			encodedData.data[(y*encodedWidth+x)*4+2] = 255;
+			encodedData.data[(y*encodedWidth+x)*4+3] = 255;
+		}
+	}
+
+	// copy the pixels in
 	g_encodedPanel.context.putImageData(encodedData,0,0);
 }
 
@@ -388,7 +452,7 @@ function RedrawChecker ()
 	if (g_redrawTimer <= 0)
 		return;
 
-	g_redrawTimer-=250;
+	g_redrawTimer-=100;
 
 	if (g_redrawTimer <= 0)
 		RedrawAll(true);
@@ -407,8 +471,8 @@ function RedrawAll (immediate)
 
 	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
 
-	RedrawEncoded();
 	RedrawSource();
+	RedrawEncoded();
 	RedrawResult();
 
 	var sourceWidth = g_sourcePanel.elem.width;
