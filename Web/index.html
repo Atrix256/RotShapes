@@ -16,6 +16,7 @@ var g_brushSize = 5;
 
 var g_AAmount = 0.01;
 var g_bilinearFilter = false;
+var g_squaredDistance = false;
 
 var g_color = 1;
 
@@ -269,6 +270,9 @@ function RedrawEncoded ()
 			var normDistY = (y - (sourceHeight/2))/hypotneuse;	
 			var distSq = normDistX*normDistX + normDistY*normDistY;
 
+			if (!g_squaredDistance)
+				distSq = Math.sqrt(distSq);
+
 			encodedBuckets[angle] = AddEntry(encodedBuckets[angle], distSq, isWhite);
 		}
 	}
@@ -291,7 +295,24 @@ function RedrawEncoded ()
 			if (index == 0 || lastIsWhite != encodedBuckets[y][index].isWhite)
 			{
 				lastIsWhite = encodedBuckets[y][index].isWhite;
-				boundaries.push(encodedBuckets[y][index].distSq);
+
+				if (index == 0)
+				{
+					boundaries.push(encodedBuckets[y][index].distSq);
+				}
+				else
+				{
+					// take the midpoint between this and the last sample as the boundary
+					var distA = g_squaredDistance ? Math.sqrt(encodedBuckets[y][index-1].distSq) : encodedBuckets[y][index-1].distSq;
+					var distB = g_squaredDistance ? Math.sqrt(encodedBuckets[y][index].distSq) : encodedBuckets[y][index].distSq;
+
+					var avg = (distA+distB)/2;
+
+					if (g_squaredDistance)
+						avg *= avg;
+
+					boundaries.push(avg);
+				}
 			}
 		}
 
@@ -328,17 +349,14 @@ function GetEncodedPixelChannel (encodedData, encodedWidth, encodedHeight, normA
 {
 	// do simple texture lookup if bilinear filtering isn't on
 	if (!g_bilinearFilter)
-		return encodedData.data[(encodedWidth*Math.floor(normAngle))*4+channel] / 255;
+		return encodedData.data[(Math.floor(encodedWidth*normAngle))*4+channel] / 255;
 
 	// only doing vertical axis filtering for now.  will need horizontal later
 	// for animations
-	var v1 = Math.floor(normAngle);
-	var v2 = Math.min(v1 + 1, encodedHeight-1);
 	var fract = normAngle % 1;
-
 	var ret =
-		encodedData.data[(encodedWidth*v1)*4+channel] * (1-fract) +
-		encodedData.data[(encodedWidth*v2)*4+channel] * fract;
+		encodedData.data[Math.floor(encodedWidth*normAngle)*4+channel] * (1-fract) +
+		encodedData.data[Math.min(Math.floor(encodedWidth*normAngle)+1,encodedHeight-1)*4+channel] * fract;
 
 	return ret / 255;
 }
@@ -364,9 +382,9 @@ function CalcFillValue(distSq, distSqMin, distSqMax)
 	// Do anti aliasing if we should
 	if (g_AAmount > 0)
 	{
-		var dist = Math.sqrt(distSq);
-		var distMin = Math.sqrt(distSqMin);
-		var distMax = Math.sqrt(distSqMax);
+		var dist = g_squaredDistance ? Math.sqrt(distSq) : distSq;
+		var distMin = g_squaredDistance ? Math.sqrt(distSqMin) : distSqMin;
+		var distMax = g_squaredDistance ? Math.sqrt(distSqMax) : distSqMax;
 
 		if (dist - distMin < g_AAmount)
 		{
@@ -422,6 +440,8 @@ function RedrawResult ()
 
 			// calculate squared distance
 			var distSq = normDistX*normDistX + normDistY*normDistY;
+			if (!g_squaredDistance)
+				distSq = Math.sqrt(distSq);
 
 			// figure out whether we are inside the shape or not
 			var fillValue = 0;
@@ -496,6 +516,7 @@ function RedrawAll (immediate)
 
 	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
 	g_bilinearFilter = document.getElementById('BilinearFilter').checked;
+	g_squaredDistance = document.getElementById('SquaredDistance').checked;
 
 	RedrawSource();
 	RedrawEncoded();
@@ -546,7 +567,7 @@ Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChang
 <br/>
 Result:<input type="text" id="ResultWidth" value="256" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="ResultHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/><br>
 Bilinear Filter Encoded Data: <input type=checkbox id="BilinearFilter" onChange="RedrawAll(true);"/><br>
-AA Distance: <input type="text" id="AADist" value="5" style="width:4em" onChange="RedrawAll(true);"/> (Smoothsteps this many pixels.  0 to turn off AA)
+AA Distance: <input type="text" id="AADist" value="0" style="width:4em" onChange="RedrawAll(true);"/> (Smoothsteps this many pixels.  0 to turn off AA)
 <div id="ResultSize"></div>
 </div>
 
@@ -556,7 +577,8 @@ actual:
 widened:
 <canvas class="html5" id="Encoded2" width="100" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br/>
-Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/>
+Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/><br>
+Encode Squared Distance: <input type=checkbox id="SquaredDistance" onChange="RedrawAll(true);"/>
 <div id="EncodedSize"></div>
 </div>
 

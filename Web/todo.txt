@@ -16,22 +16,18 @@
 * make sure the AA pixel distance is protected against < 1 and letters (NANs)
 
 * double check that we aren't ever reading out of bounds.  like esp in the results reading of the encoded image
+ * could make a helper function to sample pixels from image data, and pass it a flag to bilinear sample or not.
+ * could try bilinear sampling source image... but then again maybe not since it should be just black/white!
 
-* Only 256 distances. Skewed somehow by squared distance (good or bad??).
-  * Bilinear filtering should help fake more distances maybe? Texture repeat mode should help negatives and wrap around
-  * investigate
-
-* instead of only making boundary samples when making encoded image, maybe should try lerping between boundaries!
-
-* try unsquared distance. compare / contrast
-
-* encoding might want to write to multiple buckets? not sure... need to think about it
+* encoding might want to write to multiple buckets? not sure... need to think about encoding a bit with different source, encoded, and result image sizes
 
 * organize code
 
 * the anti aliasing (smoothstep) is what causes the hole in the middle, fix!
 
 * show a preview of the paint cursor?
+
+* why does bilinear texture sampling have such problems with artifacts?
 
 =====
 Later...
@@ -69,6 +65,10 @@ Later...
 
 * animate / distort shape by putting distance (source? encoded?) through functions over time.
 
+* renamed distsq to something more generic since it might be squared or not
+
+* it looks like the "remove smallest intervals" would be nice to correct some problems i'm hitting with tiny 1 pixel gaps in the decoded image data.
+
 =====FUTURE WORK=====
 
 * other ways of converting images to the encoded image
@@ -87,6 +87,7 @@ maybe horizontal AA can be achieved (or helped) when creating the radial image, 
 
 =====NOTES=====
 
+* squared distance makes for worse images in the end in my testing (verify w/ smoother art?)
 
 ? what should happen if result isn't square but source is.  Should it stretch?
  ! this is controlled by however the UV coordinates are set up.
