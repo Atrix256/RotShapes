@@ -1,28 +1,14 @@
-* make the circle large enough to hold the whole square (hypotneuse!)
-
-* think about which samples should be taken when there are too many!
- * maybe prefer thicker over thinner
- * or take inside and outside and get rid of middle
- * solve it!
+* remove the thinnest sections when there are too many sections?
 
 * better paint tools in creator?
  * copy/paste (for multi frames)
  * load image (for source or encoded panel)
 
-* make a diff tool to combine multiple single frame images into a multi frame image
- * multiple encoded frames in one image (for sprite sheets and animation)
- * be able to animate the preview (result) for multi frame images
-  * maybe only bilinear filter on x axis
-
 * base image applied before the clicks
  * this makes it so image loading works, as well as undo
 
 * find a better name than "rot shapes"
-
-* doing a single click with the paintbrush doesn't make a dot
-
-* how to handle when drawing in corners? the image should support that so maybe we need to make each channel additive instead of add up to 1.
- * or maybe we "denormalize" it somehow so that the distances are extended to a rectangle?
+ * Polar encoded shape textures?
 
 * how do we handle the center pixel? angle = ??!! atan2 failure i think.
 
@@ -35,10 +21,6 @@
   * Bilinear filtering should help fake more distances maybe? Texture repeat mode should help negatives and wrap around
   * investigate
 
-* how can you AA horizontally?
-
-* test / talk about: rectangular shapes both in source and dest
-
 * instead of only making boundary samples when making encoded image, maybe should try lerping between boundaries!
 
 * try unsquared distance. compare / contrast
@@ -47,12 +29,22 @@
 
 * organize code
 
+* the anti aliasing (smoothstep) is what causes the hole in the middle, fix!
+
+* show a preview of the paint cursor?
+
 =====
 Later...
 * a playground to investigate the properties of the image (scale, zoom, tint, anti aliasing, etc)
  * in webgl?
  * w/ animation
  * stroke and drop shadow
+
+
+* make a different page tool to combine multiple single frame images into a multi frame image
+ * multiple encoded frames in one image (for sprite sheets and animation)
+ * be able to animate the preview (result) for multi frame images
+  * maybe only bilinear filter on x axis
 
 * a performance test playground vs a regular texture
 
@@ -75,6 +67,8 @@ Later...
 
 * benchmark vs other methods (regular textures & distance textures)
 
+* animate / distort shape by putting distance (source? encoded?) through functions over time.
+
 =====FUTURE WORK=====
 
 * other ways of converting images to the encoded image
@@ -89,6 +83,8 @@ Later...
 
 * heuristic for which features to keep (middle, thickest, inside, outside, etc)
 
+maybe horizontal AA can be achieved (or helped) when creating the radial image, to reduce horizontal aliasing?
+
 =====NOTES=====
 
 
@@ -99,3 +95,4 @@ Later...
  ! there is no flood fill in javascript/html5 so would need to code it by hand.  image important should be good enough.
 
 ? we dont use the full range of the float (0-1) for each color channel, maybe we can improve that
+ * not all colors are meaningful, that means we aren't using the full data space available
