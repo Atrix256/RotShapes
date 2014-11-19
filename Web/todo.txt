@@ -1,4 +1,5 @@
-* remove the thinnest sections when there are too many sections?
+* encoding might want to write to multiple buckets? not sure... need to think about encoding a bit with different source, encoded, and result image sizes
+ * ! yes! there is no data for buckets of angles that don't occur in the source image!!
 
 * better paint tools in creator?
  * copy/paste (for multi frames)
@@ -7,27 +8,24 @@
 * base image applied before the clicks
  * this makes it so image loading works, as well as undo
 
-* find a better name than "rot shapes"
- * Polar encoded shape textures?
-
-* how do we handle the center pixel? angle = ??!! atan2 failure i think.
-
-* protect against letters in the input boxes somehow (makes NAN)
-* make sure the AA pixel distance is protected against < 1 and letters (NANs)
-
 * double check that we aren't ever reading out of bounds.  like esp in the results reading of the encoded image
  * could make a helper function to sample pixels from image data, and pass it a flag to bilinear sample or not.
  * could try bilinear sampling source image... but then again maybe not since it should be just black/white!
 
-* encoding might want to write to multiple buckets? not sure... need to think about encoding a bit with different source, encoded, and result image sizes
-
-* organize code
+* organize code better and clean it up
 
 * the anti aliasing (smoothstep) is what causes the hole in the middle, fix!
 
 * show a preview of the paint cursor?
 
 * why does bilinear texture sampling have such problems with artifacts?
+ * maybe a symptomn of some other problem with the data (also seems tied to center AA problem)
+
+* it looks like the "remove smallest intervals" would be nice to correct some problems i'm hitting with tiny 1 pixel gaps in the decoded image data.
+
+* something is funky in the center with AA.  making sure the mindist was > some epsilon didn't help
+
+* make undo go to the last click
 
 =====
 Later...
@@ -67,7 +65,22 @@ Later...
 
 * renamed distsq to something more generic since it might be squared or not
 
-* it looks like the "remove smallest intervals" would be nice to correct some problems i'm hitting with tiny 1 pixel gaps in the decoded image data.
+* Display code for encoded image data (and writing it to a file??)
+
+=====RESEARCH=====
+
+* source/result image 256,256. changing encoded size matters, but keeps the same shape.  result to 512,512 and suddenly all sorts of artifacts start coming out! (bilinear sampling off)
+ * maybe just a bug? or some inherant issue that needs looking at!
+ * probably due to encoding.  we don't fill in multiple buckets when encoding, so there is probably uninitialized information in those buckets.
+
+=====NAME=====
+
+* polar something or rather?
+
+=====REFERENCES=====
+ * valve distance textures
+
+ * valve distance texture references!
 
 =====FUTURE WORK=====
 
@@ -83,7 +96,10 @@ Later...
 
 * heuristic for which features to keep (middle, thickest, inside, outside, etc)
 
-maybe horizontal AA can be achieved (or helped) when creating the radial image, to reduce horizontal aliasing?
+* maybe horizontal AA can be achieved (or helped) when creating the radial image, to reduce horizontal aliasing?
+
+* instead of RGBA having 4 distances with 256 distances for each channel, could have RG,BA represent 2 distances with 65536 distances each.
+ * or 1 uint32 distance for convex shapes
 
 =====NOTES=====
 

@@ -12,7 +12,7 @@ var g_encodedPanel;
 var g_encoded2Panel;
 var g_resultPanel;
 var g_mouseDown = false;
-var g_brushSize = 5;
+var g_brushSize = 6;
 
 var g_AAmount = 0.01;
 var g_bilinearFilter = false;
@@ -31,10 +31,10 @@ function onPageLoaded()
 	g_encoded2Panel = setupCanvas('Encoded2');
 	g_resultPanel = setupCanvas('Result');
 
-	g_sourcePanel.elem.addEventListener('mousemove', function(evt) {OnMouseMove(evt);RedrawAll(false);}, false);
-	g_sourcePanel.elem.addEventListener('mousedown', function(evt) {OnMouseDown(evt);RedrawAll(false);}, false);
-	g_sourcePanel.elem.addEventListener('mouseup', function(evt) {OnMouseUp(evt);RedrawAll(false);}, false);
-	g_sourcePanel.elem.addEventListener('mouseleave', function(evt) {OnMouseUp(evt);RedrawAll(false);}, false);
+	g_sourcePanel.elem.addEventListener('mousemove', function(evt) {if(event.which == 1) OnMouseMove(evt);}, false);
+	g_sourcePanel.elem.addEventListener('mousedown', function(evt) {if(event.which == 1) OnMouseDown(evt);}, false);
+	g_sourcePanel.elem.addEventListener('mouseup', function(evt) {if(event.which == 1) OnMouseUp(evt);}, false);
+	g_sourcePanel.elem.addEventListener('mouseleave', function(evt) {OnMouseUp(evt);}, false);
 	RedrawAll(true);
 
 	setInterval(function(){RedrawChecker();}, 100);
@@ -114,10 +114,10 @@ function ColorSource ()
 
 function BrushSize ()
 {
-	if (g_brushSize < 10)
-		g_brushSize++;
+	if (g_brushSize < 20)
+		g_brushSize +=2 ;
 	else
-		g_brushSize = 1;
+		g_brushSize = 2;
 
 	document.getElementById('BrushSize').value="Brush Size: "+g_brushSize;
 }
@@ -181,30 +181,25 @@ function RedrawSource()
 	}
 }
 
+function SanitizeInput (value, min)
+{
+	value = parseInt(Math.floor(value));
+	if (isNaN(value) || value < min)
+		value = min;
+
+	return value;
+}
+
 function ResizeCanvases ()
 {
-	// make sure they are whole numbers
-	document.getElementById('SourceWidth').value = Math.floor(document.getElementById('SourceWidth').value);
-	document.getElementById('SourceHeight').value = Math.floor(document.getElementById('SourceHeight').value);
+	// make sure they don't go below 1
+	document.getElementById('SourceWidth').value = SanitizeInput(document.getElementById('SourceWidth').value, 1);
+	document.getElementById('SourceHeight').value = SanitizeInput(document.getElementById('SourceHeight').value, 1);
 
-	document.getElementById('EncodedHeight').value = Math.floor(document.getElementById('EncodedHeight').value);
+	document.getElementById('EncodedHeight').value = SanitizeInput(document.getElementById('EncodedHeight').value, 1);
 
-	document.getElementById('ResultWidth').value = Math.floor(document.getElementById('ResultWidth').value);
-	document.getElementById('ResultHeight').value = Math.floor(document.getElementById('ResultHeight').value);
-
-	// make sure sizes dont go below 1
-	if (document.getElementById('SourceWidth').value < 1)
-		document.getElementById('SourceWidth').value = 1;
-	if (document.getElementById('SourceHeight').value < 1)
-		document.getElementById('SourceHeight').value = 1;	
-
-	if (document.getElementById('EncodedHeight').value < 1)
-		document.getElementById('EncodedHeight').value = 1;
-
-	if (document.getElementById('ResultWidth').value < 1)
-		document.getElementById('ResultWidth').value = 1;
-	if (document.getElementById('ResultHeight').value < 1)
-		document.getElementById('ResultHeight').value = 1;
+	document.getElementById('ResultWidth').value = SanitizeInput(document.getElementById('ResultWidth').value, 1);
+	document.getElementById('ResultHeight').value = SanitizeInput(document.getElementById('ResultHeight').value, 1);
 
 	// resize
 	g_sourcePanel.elem.width = document.getElementById('SourceWidth').value;
@@ -227,6 +222,44 @@ function AddEntry (bucket, distSq, isWhite)
 
 function SortBuckets(a,b) {
 	return a.distSq - b.distSq;
+}
+
+function RemoveShortestBoundary (boundaries)
+{
+	// find the shortest boundary that isn't the first black to white, or the last white to black
+	var shortestLengthIndex = -1;
+	var shortestLength = -1;
+	for (var index = 1; index < boundaries.length-1; ++index)
+	{
+		var length = boundaries[index] - boundaries[index-1];
+
+		if (index == 1 || length < shortestLength)
+		{
+			shortestLengthIndex = index;
+			shortestLength = length;
+		}
+	}
+
+	// remove the shortest one
+	if (shortestLengthIndex != -1)
+	{
+		boundaries.splice(shortestLengthIndex-1,2);
+	}
+	// show an error if we couldn't find one for some reason
+	else
+	{
+		alert("Assert: RemoveShortestBoundary failed to find a boundary to remove! boundaries.length = " + boundaries.length);
+		boundaries.pop();
+	}
+	
+	return boundaries;
+}
+
+function CondenseBoundaries (boundaries)
+{
+	while (boundaries.length > 5)
+		boundaries = RemoveShortestBoundary(boundaries);
+	return boundaries;
 }
 
 function RedrawEncoded ()
@@ -257,7 +290,7 @@ function RedrawEncoded ()
 	{
 		for (var x = 0; x < sourceWidth; ++x)
 		{
-			var isWhite = (sourceData.data[(y*sourceWidth+x)*4] > 0);
+			var isWhite = (sourceData.data[(y*sourceWidth+x)*4] > 127);
 
 			var angle = Math.atan2(y-sourceHeight/2,x-sourceWidth/2);
 			if (angle < 0)
@@ -280,12 +313,12 @@ function RedrawEncoded ()
 	// convert the encoded buckets to pixels (clear out pixels at same time, and remove clearing from above)
 	for (var y = 0; y < encodedHeight; ++y)
 	{
-		// make sure there's a black entry at 0 and 1
-		encodedBuckets[y].splice(0,0,{"distSq":0,"isWhite":false});
-		encodedBuckets[y].push({"distSq":1,"isWhite":false});		
-
 		// sort the entries by distance
 		encodedBuckets[y].sort(SortBuckets);		
+
+		// make sure there's a black entry at 0 and 1
+		encodedBuckets[y].splice(0,0,{"distSq":0,"isWhite":false});
+		encodedBuckets[y].push({"distSq":1,"isWhite":false});				
 
 		// make a table of the boundary changes for samples
 		var boundaries = new Array();
@@ -316,13 +349,16 @@ function RedrawEncoded ()
 			}
 		}
 
+		// fix up the boundaries
+		boundaries = CondenseBoundaries(boundaries);
+
 		// encode distances for angle!
 		var R = boundaries.length > 1 ? Math.min(Math.floor(boundaries[1]*255),255) : 255;
 		var G = boundaries.length > 2 ? Math.min(Math.floor(boundaries[2]*255),255) : 255;
 		var B = boundaries.length > 3 ? Math.min(Math.floor(boundaries[3]*255),255) : 255;
 		var A = boundaries.length > 4 ? Math.min(Math.floor(boundaries[4]*255),255) : 255;
 
-		// apply color
+		// apply color to our encoded image
 		for (var x = 0; x < encodedWidth; ++x)
 		{
 			encodedData.data[(y*encodedWidth+x)*4+0] = R;
@@ -331,6 +367,7 @@ function RedrawEncoded ()
 			encodedData.data[(y*encodedWidth+x)*4+3] = A;
 		}
 
+		// apply color to our widened encoded image
 		for (var x = 0; x < encoded2Width; ++x)
 		{
 			encoded2Data.data[(y*encoded2Width+x)*4+0] = R;
@@ -514,6 +551,8 @@ function RedrawAll (immediate)
 
 	g_redrawTimer = 0;
 
+	document.getElementById('AADist').value = SanitizeInput(document.getElementById('AADist').value, 0);	
+
 	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
 	g_bilinearFilter = document.getElementById('BilinearFilter').checked;
 	g_squaredDistance = document.getElementById('SquaredDistance').checked;
@@ -555,7 +594,7 @@ function RedrawAll (immediate)
 <br>
 Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="SourceHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/>
 <br>
-<input type=button id="BrushSize" value="Brush Size: 5" onClick="BrushSize()"/>
+<input type=button id="BrushSize" value="Brush Size: 6" onClick="BrushSize()"/>
 <input type=button id="Color" value="Color: White" onClick="ColorSource()"/>
 <input type=button value="Undo" onClick="UndoSource()"/>
 <input type=button value="Clear" onClick="ClearSource()"/>
