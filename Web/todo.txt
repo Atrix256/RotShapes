@@ -21,11 +21,7 @@
 * why does bilinear texture sampling have such problems with artifacts?
  * maybe a symptomn of some other problem with the data (also seems tied to center AA problem)
 
-* it looks like the "remove smallest intervals" would be nice to correct some problems i'm hitting with tiny 1 pixel gaps in the decoded image data.
-
 * something is funky in the center with AA.  making sure the mindist was > some epsilon didn't help
-
-* make undo go to the last click
 
 =====
 Later...
@@ -33,7 +29,6 @@ Later...
  * in webgl?
  * w/ animation
  * stroke and drop shadow
-
 
 * make a different page tool to combine multiple single frame images into a multi frame image
  * multiple encoded frames in one image (for sprite sheets and animation)
@@ -67,11 +62,17 @@ Later...
 
 * Display code for encoded image data (and writing it to a file??)
 
+* since we may not have info for all angles since we loop through the source pixels, maybe instead should try looping through all angles and process all pixels that fall within the code that the angle represents!
+
 =====RESEARCH=====
 
 * source/result image 256,256. changing encoded size matters, but keeps the same shape.  result to 512,512 and suddenly all sorts of artifacts start coming out! (bilinear sampling off)
  * maybe just a bug? or some inherant issue that needs looking at!
  * probably due to encoding.  we don't fill in multiple buckets when encoding, so there is probably uninitialized information in those buckets.
+
+* when result image is extra small there will be problems from not enough info.  Need to use mips i think.
+
+* use shape as alpha texture for texture for decaling
 
 =====NAME=====
 

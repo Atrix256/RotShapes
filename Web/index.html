@@ -96,6 +96,15 @@ function AddClick(mousePos, drag)
 
 function UndoSource(mousePos, drag)
 {
+	if (g_clicks.length == 0)
+		return;
+
+	do
+	{
+		g_clicks.pop();
+	}
+	while (g_clicks.length > 0 && g_clicks[g_clicks.length-1][1] == true);
+
 	g_clicks.splice(-1,1);
 	RedrawAll(false);
 }
