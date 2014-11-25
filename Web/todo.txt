@@ -1,9 +1,9 @@
-* encoding might want to write to multiple buckets? not sure... need to think about encoding a bit with different source, encoded, and result image sizes
- * ! yes! there is no data for buckets of angles that don't occur in the source image!!
 
-* better paint tools in creator?
- * copy/paste (for multi frames)
- * load image (for source or encoded panel)
+* seems like theres black dots and gaps getting into the data somehow. need to figure that out.
+
+ * make texture repeat work with bilinear sampling -> for wrap around!
+
+ * load image support -> erase all pixels
 
 * base image applied before the clicks
  * this makes it so image loading works, as well as undo
@@ -14,14 +14,15 @@
 
 * organize code better and clean it up
 
-* the anti aliasing (smoothstep) is what causes the hole in the middle, fix!
+* bug: the anti aliasing (smoothstep) is what causes the hole in the middle, fix! (maybe symptom of bug below)
 
-* show a preview of the paint cursor?
+* bug: fill in the middle, set to 512x512 results and 1024 encoded. problems!
 
-* why does bilinear texture sampling have such problems with artifacts?
- * maybe a symptomn of some other problem with the data (also seems tied to center AA problem)
+* test in IE, Firefox, and on mac
 
-* something is funky in the center with AA.  making sure the mindist was > some epsilon didn't help
+
+* there are definitely some non black & white pixels in the source data when reading it.  that might be causing problems with the encoding.
+ * could try saving image and forcing it to white/black and re-loading it, and seeing difference
 
 =====
 Later...
@@ -52,17 +53,15 @@ Later...
  * animated icons
  * get pixel artists involved
 
-* test in IE, Firefox, and on mac
-
 * benchmark vs other methods (regular textures & distance textures)
 
-* animate / distort shape by putting distance (source? encoded?) through functions over time.
+* animate / distort shape by putting distance (source? encoded?) through functions over time. also texture offset animated over time for rotation effects!
 
-* renamed distsq to something more generic since it might be squared or not
+* rename distsq to something more generic since it might be squared or not
 
-* Display code for encoded image data (and writing it to a file??)
+* Display C code for encoded image data (and writing it to a file??)
 
-* since we may not have info for all angles since we loop through the source pixels, maybe instead should try looping through all angles and process all pixels that fall within the code that the angle represents!
+* add a checkbox to show the origin on the result image?
 
 =====RESEARCH=====
 
@@ -70,13 +69,23 @@ Later...
  * maybe just a bug? or some inherant issue that needs looking at!
  * probably due to encoding.  we don't fill in multiple buckets when encoding, so there is probably uninitialized information in those buckets.
 
-* when result image is extra small there will be problems from not enough info.  Need to use mips i think.
+* when result image is extra small there will be problems from not enough info taken from encoded data.  Need to use mips i think.
 
 * use shape as alpha texture for texture for decaling
+
+* do texture offset to rotate image
+
+=====NOTES=====
+
+* why does bilinear texture sampling have such problems with artifacts?
+ * has to do with the fact that things next to eachother in space may be encoded in different color channels, so the interpolation sucks
+ * also, making the "empty pixel" values better helped this
 
 =====NAME=====
 
 * polar something or rather?
+
+* dual annulus polar shape encoding!
 
 =====REFERENCES=====
  * valve distance textures
@@ -85,11 +94,17 @@ Later...
 
 =====FUTURE WORK=====
 
+* some kind of blur pass to smooth data (but might lose details from source image!)
+
+* find out how to make bilinear filtering work better.  "empty" angles next to non empty.  it will blend and make things go to 0 or 255 ):
+
 * other ways of converting images to the encoded image
    * like, instead of casting a ray, could do a cone and average distances found or something.
    * could use bressenham's algorithm if just casting a ray.
+   * probably lots of diff ways
 
 * look at being able to do AA in "squared distance space" somehow?
+ * only matters if encoding in squared distance
 
 * could decrease # of color channels if you don't need all this info.
  * 2 color channels = out, in, out (1 spiral)
@@ -102,9 +117,15 @@ Later...
 * instead of RGBA having 4 distances with 256 distances for each channel, could have RG,BA represent 2 distances with 65536 distances each.
  * or 1 uint32 distance for convex shapes
 
+* bilinear filtering has problems because even when white pixels are next to eachother, they may be encoded in different channels!!
+ * various situations, seem fixable with specific changes, maybe more to think about here.
+ * can we stabalize it somehow?
+ * maybe low pass filter changes somehow so big changes in the filter lookup are ignored?
+
 =====NOTES=====
 
 * squared distance makes for worse images in the end in my testing (verify w/ smoother art?)
+ * could show this in action somehow.
 
 ? what should happen if result isn't square but source is.  Should it stretch?
  ! this is controlled by however the UV coordinates are set up.
@@ -114,3 +135,4 @@ Later...
 
 ? we dont use the full range of the float (0-1) for each color channel, maybe we can improve that
  * not all colors are meaningful, that means we aren't using the full data space available
+ * more complex shape decoding likely waranted for more accuracy.  video cards have more processing power, and are more often limited by memory access.

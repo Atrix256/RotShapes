@@ -24,6 +24,8 @@ var g_clicks = new Array();
 
 var g_redrawTimer = 0;
 
+var g_pixelBucketMappings = null;
+
 function onPageLoaded()
 {
 	g_sourcePanel = setupCanvas('Source');
@@ -211,11 +213,22 @@ function ResizeCanvases ()
 	document.getElementById('ResultHeight').value = SanitizeInput(document.getElementById('ResultHeight').value, 1);
 
 	// resize
-	g_sourcePanel.elem.width = document.getElementById('SourceWidth').value;
-	g_sourcePanel.elem.height = document.getElementById('SourceHeight').value;
+	var newWidth = document.getElementById('SourceWidth').value;
+	var newHeight = document.getElementById('SourceHeight').value;
+	if (g_sourcePanel.elem.width != newWidth || g_sourcePanel.elem.height != newHeight)
+	{
+		g_pixelBucketMappings = null;
+		g_sourcePanel.elem.width = newWidth;
+		g_sourcePanel.elem.height = newHeight;
+	}
 
-	g_encodedPanel.elem.height = document.getElementById('EncodedHeight').value;
-	g_encoded2Panel.elem.height = document.getElementById('EncodedHeight').value;
+	var newHeight = document.getElementById('EncodedHeight').value;
+	if (g_encodedPanel.elem.height != newHeight)
+	{
+		g_pixelBucketMappings = null;
+		g_encodedPanel.elem.height = newHeight;
+		g_encoded2Panel.elem.height = newHeight;
+	}
 
 	g_resultPanel.elem.width = document.getElementById('ResultWidth').value;
 	g_resultPanel.elem.height = document.getElementById('ResultHeight').value;	
@@ -271,6 +284,49 @@ function CondenseBoundaries (boundaries)
 	return boundaries;
 }
 
+function CalcPixelBucket (x,y,width,height,numBuckets)
+{
+	var angle = Math.atan2(y-height/2,x-width/2);
+	if (angle < 0)
+		angle += Math.PI * 2;
+	angle /= Math.PI*2;
+	angle *= numBuckets;	
+	return Math.floor(angle)%numBuckets;
+}
+
+function PixelIsInBucket (x,y,width,height,bucketIndex,numBuckets)
+{
+	// calculate the angle buckets of each corner of the pixel
+	var bucket1 = CalcPixelBucket (x  ,y  ,width,height,numBuckets);
+	var bucket2 = CalcPixelBucket (x+1,y  ,width,height,numBuckets);
+	var bucket3 = CalcPixelBucket (x+1,y+1,width,height,numBuckets);
+	var bucket4 = CalcPixelBucket (x  ,y+1,width,height,numBuckets);
+
+	// if any of the corners are in the bucket, the pixel is in the bucket
+	if (bucket1 == bucketIndex ||
+		bucket2 == bucketIndex ||
+		bucket3 == bucketIndex ||
+		bucket4 == bucketIndex)
+		return true;
+
+	// if the pixel straddles the bucket, the pixel is in the bucket
+	var inside1A = bucket1 > bucketIndex;
+	var inside1B = bucket1 < bucketIndex;
+	var inside2A = bucket2 > bucketIndex;
+	var inside2B = bucket2 < bucketIndex;
+	var inside3A = bucket3 > bucketIndex;
+	var inside3B = bucket3 < bucketIndex;
+	var inside4A = bucket4 > bucketIndex;
+	var inside4B = bucket4 < bucketIndex;
+	var someOnRight = inside1A || inside2A || inside3A || inside4A;
+	var someOnLeft =  inside1B || inside2B || inside3B || inside4B;
+	if (someOnLeft && someOnRight)
+		return;
+
+	// else the pixel is not in the bucket
+	return false;
+}
+
 function RedrawEncoded ()
 {
 	// get access to the encoded and source image sizes
@@ -294,19 +350,30 @@ function RedrawEncoded ()
 	// calculate the maximum distance
 	var hypotneuse = Math.sqrt((sourceWidth/2)*(sourceWidth/2)+(sourceHeight/2)*(sourceHeight/2));
 
+	// if we are missing our mapping of what pixels belong in what buckets, remake it now
+	if (g_pixelBucketMappings == null)
+	{
+		g_pixelBucketMappings = new Array(sourceWidth*sourceHeight);
+		for (var y = 0; y < sourceHeight; ++y)
+		{
+			for (var x = 0; x < sourceWidth; ++x)
+			{
+				g_pixelBucketMappings[y*sourceWidth+x] = new Array();
+				for (var index = 0; index < encodedBuckets.length; ++index)
+				{
+					if (PixelIsInBucket(x,y,sourceWidth,sourceHeight,index,encodedBuckets.length))
+						g_pixelBucketMappings[y*sourceWidth+x].push(index);
+				}
+			}
+		}
+	}
+
 	// loop through the source data
 	for (var y = 0; y < sourceHeight; ++y)
 	{
 		for (var x = 0; x < sourceWidth; ++x)
 		{
-			var isWhite = (sourceData.data[(y*sourceWidth+x)*4] > 127);
-
-			var angle = Math.atan2(y-sourceHeight/2,x-sourceWidth/2);
-			if (angle < 0)
-				angle += Math.PI * 2;
-			angle /= Math.PI*2;
-			angle *= encodedHeight;
-			angle = Math.floor(angle);
+			var isWhite = (sourceData.data[(y*sourceWidth+x)*4] > 0);
 
 			var normDistX = (x - (sourceWidth/2))/hypotneuse;
 			var normDistY = (y - (sourceHeight/2))/hypotneuse;	
@@ -315,7 +382,12 @@ function RedrawEncoded ()
 			if (!g_squaredDistance)
 				distSq = Math.sqrt(distSq);
 
-			encodedBuckets[angle] = AddEntry(encodedBuckets[angle], distSq, isWhite);
+			// add this distance value to every bucket that the angle belongs to.
+			for (var index = 0; index < g_pixelBucketMappings[y*sourceWidth+x].length; ++index)
+			{
+				var bucketIndex = g_pixelBucketMappings[y*sourceWidth+x][index];
+				encodedBuckets[bucketIndex] = AddEntry(encodedBuckets[bucketIndex], distSq, isWhite);
+			}			
 		}
 	}
 
@@ -363,9 +435,18 @@ function RedrawEncoded ()
 
 		// encode distances for angle!
 		var R = boundaries.length > 1 ? Math.min(Math.floor(boundaries[1]*255),255) : 255;
-		var G = boundaries.length > 2 ? Math.min(Math.floor(boundaries[2]*255),255) : 255;
-		var B = boundaries.length > 3 ? Math.min(Math.floor(boundaries[3]*255),255) : 255;
-		var A = boundaries.length > 4 ? Math.min(Math.floor(boundaries[4]*255),255) : 255;
+		var G = boundaries.length > 2 ? Math.min(Math.floor(boundaries[2]*255),255) : R;
+		var B = boundaries.length > 3 ? Math.min(Math.floor(boundaries[3]*255),255) : G;
+		var A = boundaries.length > 4 ? Math.min(Math.floor(boundaries[4]*255),255) : B;
+
+		// if blank bucket, encode the pixels in a way to minimize problems with bilinear filtering the neighboring pixels
+		if (boundaries.length <= 1)
+		{
+			R = 255;
+			G = 192;
+			B = 128;
+			A = 64;
+		}
 
 		// apply color to our encoded image
 		for (var x = 0; x < encodedWidth; ++x)
@@ -396,6 +477,9 @@ function GetEncodedPixelChannel (encodedData, encodedWidth, encodedHeight, normA
 	// do simple texture lookup if bilinear filtering isn't on
 	if (!g_bilinearFilter)
 		return encodedData.data[(Math.floor(encodedWidth*normAngle))*4+channel] / 255;
+
+	// if doing bilinear texture filtering, offset half a pixel to get rid of the slight rotation effect
+	normAngle -= 0.5;
 
 	// only doing vertical axis filtering for now.  will need horizontal later
 	// for animations
