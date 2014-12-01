@@ -1,14 +1,15 @@
-* convert loaded image to black/white. drop down select box w/ options: convert to black/white, red channel, green channel, blue channel.  maybe a threshold to seperate black from white?
+* try w/ color images
+
+* implement color conversion to black/white
+ * maybe let people put in a cusrtom color instead of choosing R,G,B,greyscale?
 
 * seems like theres black dots and gaps getting into the data somehow. need to figure that out.
+ * investigate in C++, but it's likely due to neighboring black pixels.  need to elimnate not just thinnest sections first, but also least wide as far as by fewerst angles on the arc.
 
  * make texture repeat work with bilinear sampling -> for wrap around!
 
  * load image support -> erase all pixels
   * read pixel data: http://blog.teamtreehouse.com/reading-files-using-the-html5-filereader-api
-
-* base image applied before the clicks
- * this makes it so image loading works, as well as undo
 
 * double check that we aren't ever reading out of bounds.  like esp in the results reading of the encoded image
  * could make a helper function to sample pixels from image data, and pass it a flag to bilinear sample or not.
@@ -16,7 +17,7 @@
 
 * organize code better and clean it up
 
-* bug: the anti aliasing (smoothstep) is what causes the hole in the middle, fix! (maybe symptom of bug below)
+* bug: the anti aliasing (smoothstep) is what causes the hole in the middle when the middle is filled in, fix! (maybe symptom of bug below)
 
 * bug: fill in the middle, set to 512x512 results and 1024 encoded. problems!
 
@@ -76,7 +77,7 @@ Later...
  * maybe just a bug? or some inherant issue that needs looking at!
  * probably due to encoding.  we don't fill in multiple buckets when encoding, so there is probably uninitialized information in those buckets.
 
-* when result image is extra small there will be problems from not enough info taken from encoded data.  Need to use mips i think.
+* when result image is extra small there might be problems from not enough info taken from encoded data.  Need to use mips i think, possibly w/ custom mip making code?
 
 * use shape as alpha texture for texture for decaling
 
@@ -111,7 +112,7 @@ Later...
    * probably lots of diff ways
 
 * look at being able to do AA in "squared distance space" somehow?
- * only matters if encoding in squared distance
+ * only matters if encoding in squared distance, and squared distance has bad results
 
 * could decrease # of color channels if you don't need all this info.
  * 2 color channels = out, in, out (1 spiral)
@@ -130,6 +131,8 @@ Later...
  * maybe low pass filter changes somehow so big changes in the filter lookup are ignored?
 
 =====NOTES=====
+
+* the paper should be in two parts... 1) using the shapes encoded in this way.  2) converting images to this encoding.
 
 * squared distance makes for worse images in the end in my testing (verify w/ smoother art?)
  * could show this in action somehow.

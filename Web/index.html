@@ -715,8 +715,16 @@ Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChang
 <input type=button id="BrushSize" value="Brush Size: 6" onClick="BrushSize()"/>
 <input type=button id="Color" value="Color: White" onClick="ColorSource()"/>
 <input type=button value="Undo" onClick="UndoSource()"/>
-<input type=button value="Clear" onClick="ClearSource()"/><br>
-<input type=file id="fileLoader" onChange="LoadFile();"/>
+<input type=button value="Clear" onClick="ClearSource()"/><br><br>
+Load Image:
+<input type=file id="fileLoader" onChange="LoadFile();"/><br>
+Color Conversion:
+<select id="imageConversion">
+  <option value="GreyScale">Grey Scale</option>
+  <option value="Red">Red Channel</option>
+  <option value="Green">Green Channel</option>
+  <option value="Blue">Blue Channel</option>
+</select>
 <div id="SourceSize"></div>
 </div>
 
