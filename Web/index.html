@@ -251,6 +251,17 @@ function SortBuckets(a,b) {
 	return a.distSq - b.distSq;
 }
 
+function ConvertImage ()
+{
+	if (g_image == null)
+		return;
+
+	var canvas = document.createElement('canvas');
+	var context = canvas.getContext('2d');
+	context.drawImage(g_image, 0, 0 );
+	var imgData = context.getImageData(0, 0, g_image.width, g_image.height);
+}
+
 function LoadFile ()
 {
 	if (document.getElementById('fileLoader').length < 1)
@@ -264,6 +275,9 @@ function LoadFile ()
 	reader.onload = function(e) {
 	    g_image = new Image();
 	    g_image.src = reader.result;
+
+	    // make sure the image is black and white
+	    ConvertImage();
 
 		// redraw everything
 	    RedrawAll(true);
@@ -457,8 +471,16 @@ function RedrawEncoded ()
 
 		// fix up the boundaries
 		boundaries = CondenseBoundaries(boundaries);
-
+		/*
 		// encode distances for angle!
+		// if not enough distances given, encode the empty values in a way to minimize problems with bilinear filtering the neighboring pixels
+		var R = boundaries.length > 1 ? Math.min(Math.floor(boundaries[1]*255),255) : 255;
+		var G = boundaries.length > 2 ? Math.min(Math.floor(boundaries[2]*255),255) : R/2;
+		var B = boundaries.length > 3 ? Math.min(Math.floor(boundaries[3]*255),255) : G/2;
+		var A = boundaries.length > 4 ? Math.min(Math.floor(boundaries[4]*255),255) : B/2;
+		*/
+
+		// encode distances for angle!  We start at 1 because the colors encode where the boundary ends
 		var R = boundaries.length > 1 ? Math.min(Math.floor(boundaries[1]*255),255) : 255;
 		var G = boundaries.length > 2 ? Math.min(Math.floor(boundaries[2]*255),255) : R;
 		var B = boundaries.length > 3 ? Math.min(Math.floor(boundaries[3]*255),255) : G;
@@ -509,9 +531,12 @@ function GetEncodedPixelChannel (encodedData, encodedWidth, encodedHeight, normA
 	// only doing vertical axis filtering for now.  will need horizontal later
 	// for animations
 	var fract = normAngle % 1;
+	var heightA = Math.floor(normAngle) % encodedHeight;
+	var heightB = (pixelA+1) % encodedHeight;
+
 	var ret =
-		encodedData.data[Math.floor(encodedWidth*normAngle)*4+channel] * (1-fract) +
-		encodedData.data[Math.min(Math.floor(encodedWidth*normAngle)+1,encodedHeight-1)*4+channel] * fract;
+		encodedData.data[heightA*encodedWidth*4+channel] * (1-fract) +
+		encodedData.data[heightB*encodedWidth*4+channel] * fract;
 
 	return ret / 255;
 }

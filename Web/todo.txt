@@ -1,3 +1,9 @@
+* maybe have a channel color multiplier instead of a drop down for choosing how to convert image to black / white? or leave it up to them to do more advanced conversions outside of the page.
+
+* default value for channels should be 255, r/2, g/2, b/2/  try it anyways (kinda having some issues with it when first trying it)
+
+* fix setting the image twice, etc.
+
 * try w/ color images
 
 * implement color conversion to black/white
@@ -30,6 +36,10 @@
  * Another pass on the data where if there's only one entry next to serving with to entries, make it in the closer one
 
 =====
+
+* a page to combine multiple rotshape images into a "spritesheet" or animation file.
+
+* an index.html for the web app stuff
 
 * a command line encoder / decoder to remove AA from the equation and to have another way to do it.
 
