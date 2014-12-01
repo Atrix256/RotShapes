@@ -1,9 +1,11 @@
+* convert loaded image to black/white. drop down select box w/ options: convert to black/white, red channel, green channel, blue channel.  maybe a threshold to seperate black from white?
 
 * seems like theres black dots and gaps getting into the data somehow. need to figure that out.
 
  * make texture repeat work with bilinear sampling -> for wrap around!
 
  * load image support -> erase all pixels
+  * read pixel data: http://blog.teamtreehouse.com/reading-files-using-the-html5-filereader-api
 
 * base image applied before the clicks
  * this makes it so image loading works, as well as undo
@@ -24,7 +26,12 @@
 * there are definitely some non black & white pixels in the source data when reading it.  that might be causing problems with the encoding.
  * could try saving image and forcing it to white/black and re-loading it, and seeing difference
 
+ * Another pass on the data where if there's only one entry next to serving with to entries, make it in the closer one
+
 =====
+
+* a command line encoder / decoder to remove AA from the equation and to have another way to do it.
+
 Later...
 * a playground to investigate the properties of the image (scale, zoom, tint, anti aliasing, etc)
  * in webgl?

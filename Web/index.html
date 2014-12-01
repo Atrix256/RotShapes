@@ -21,6 +21,7 @@ var g_squaredDistance = false;
 var g_color = 1;
 
 var g_clicks = new Array();
+var g_image = null;
 
 var g_redrawTimer = 0;
 
@@ -114,6 +115,7 @@ function UndoSource(mousePos, drag)
 function ClearSource ()
 {
 	g_clicks = new Array();
+	g_image = null;
 	RedrawAll(true);
 }
 
@@ -170,6 +172,9 @@ function FillImageBuffer(context, color, width, height)
 function RedrawSource()
 {
 	g_sourcePanel.clear();
+
+	if (g_image != null)
+		g_sourcePanel.context.drawImage(g_image,0,0);
 
 	g_sourcePanel.context.lineJoin = "round";
 
@@ -244,6 +249,26 @@ function AddEntry (bucket, distSq, isWhite)
 
 function SortBuckets(a,b) {
 	return a.distSq - b.distSq;
+}
+
+function LoadFile ()
+{
+	if (document.getElementById('fileLoader').length < 1)
+		return;
+
+	// clear the source
+	ClearSource();
+
+	// load the image
+	var reader = new FileReader();
+	reader.onload = function(e) {
+	    g_image = new Image();
+	    g_image.src = reader.result;
+
+		// redraw everything
+	    RedrawAll(true);
+  	}
+	reader.readAsDataURL(document.getElementById('fileLoader').files[0]); 	
 }
 
 function RemoveShortestBoundary (boundaries)
@@ -690,7 +715,8 @@ Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChang
 <input type=button id="BrushSize" value="Brush Size: 6" onClick="BrushSize()"/>
 <input type=button id="Color" value="Color: White" onClick="ColorSource()"/>
 <input type=button value="Undo" onClick="UndoSource()"/>
-<input type=button value="Clear" onClick="ClearSource()"/>
+<input type=button value="Clear" onClick="ClearSource()"/><br>
+<input type=file id="fileLoader" onChange="LoadFile();"/>
 <div id="SourceSize"></div>
 </div>
 
