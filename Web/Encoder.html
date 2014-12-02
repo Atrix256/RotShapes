@@ -534,6 +534,35 @@ function RedrawEncoded ()
 		}		
 	}
 
+	// run the programatic shape javascript function
+	for (var y = 0; y < encodedHeight; ++y)
+	{
+		var pixelArray = new Array(4);
+		pixelArray[0] = encodedData.data[(y*encodedWidth)*4+0] / 255;
+		pixelArray[1] = encodedData.data[(y*encodedWidth)*4+1] / 255;
+		pixelArray[2] = encodedData.data[(y*encodedWidth)*4+2] / 255;
+		pixelArray[3] = encodedData.data[(y*encodedWidth)*4+3] / 255;
+		var slice = y;
+		var numSlices = encodedHeight;
+
+		eval(document.getElementById('CustomShapeCode').value);
+
+		encodedData.data[(y*encodedWidth)*4+0] = pixelArray[0] * 255;
+		encodedData.data[(y*encodedWidth)*4+1] = pixelArray[1] * 255;
+		encodedData.data[(y*encodedWidth)*4+2] = pixelArray[2] * 255;
+		encodedData.data[(y*encodedWidth)*4+3] = pixelArray[3] * 255;
+
+		// apply color to our widened encoded image
+		for (var x = 0; x < encoded2Width; ++x)
+		{
+			encoded2Data.data[(y*encoded2Width+x)*4+0] = encodedData.data[(y*encodedWidth)*4+0];
+			encoded2Data.data[(y*encoded2Width+x)*4+1] = encodedData.data[(y*encodedWidth)*4+1];
+			encoded2Data.data[(y*encoded2Width+x)*4+2] = encodedData.data[(y*encodedWidth)*4+2];
+			encoded2Data.data[(y*encoded2Width+x)*4+3] = encodedData.data[(y*encodedWidth)*4+3];
+		}	
+	}
+	
+
 	/*
 	// TEMP! for making a basic distance image. leave until we can put custom javascript in the page to run
 	for (var y = 0; y < encodedHeight; ++y)
@@ -821,6 +850,18 @@ Encode Squared Distance: <input type=checkbox id="SquaredDistance" onChange="Red
 Use Hypotneuse (Make full rectangle usable): <input type=checkbox id="Hypotneuse" checked="true" onChange="RedrawAll(true);"/><br>
 <div id="EncodedSize"></div>
 </div>
+
+<div class="code">
+<br><br>
+Programatic Javascript Shape:<br>
+<br>
+function AlterDistance (slice, numSlices, pixelArray)<br>
+{<br>
+<textarea id="CustomShapeCode"></textarea><br>
+&nbsp;&nbsp;return pixelArray;<br>
+}
+</div>
+
 
 </body>
 </html>
