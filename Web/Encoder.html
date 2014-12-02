@@ -1,10 +1,6 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>RotShape Creator</title>
-<style type="text/css">
-body { background-color:grey;}
-canvas.html5 {border:1px solid white;}
-div.panel {float:left; width:33%;}
-</style>
+<link rel="stylesheet" type="text/css" href="style.css"/>
 <script>
 
 var g_sourcePanel;
@@ -17,6 +13,7 @@ var g_brushSize = 6;
 var g_AAmount = 0.01;
 var g_bilinearFilter = false;
 var g_squaredDistance = false;
+var g_useHypotneuse = true;
 
 var g_color = 1;
 
@@ -410,7 +407,7 @@ function RedrawEncoded ()
 		encodedBuckets[y] = new Array();
 
 	// calculate the maximum distance
-	var hypotneuse = Math.sqrt((sourceWidth/2)*(sourceWidth/2)+(sourceHeight/2)*(sourceHeight/2));
+	var hypotneuse = g_useHypotneuse ? Math.sqrt((sourceWidth/2)*(sourceWidth/2)+(sourceHeight/2)*(sourceHeight/2)) : sourceWidth/2;
 
 	// if we are missing our mapping of what pixels belong in what buckets, remake it now
 	if (g_pixelBucketMappings == null)
@@ -537,6 +534,40 @@ function RedrawEncoded ()
 		}		
 	}
 
+	/*
+	// TEMP! for making a basic distance image. leave until we can put custom javascript in the page to run
+	for (var y = 0; y < encodedHeight; ++y)
+	{
+		var R = y/2;
+		var G = y;
+		var B = y;
+		var A = y;
+
+		//var R = 32;
+		//var G = 64;
+		//var B = 128;
+		//var A = 192;
+
+		// apply color to our encoded image
+		for (var x = 0; x < encodedWidth; ++x)
+		{
+			encodedData.data[(y*encodedWidth+x)*4+0] = R;
+			encodedData.data[(y*encodedWidth+x)*4+1] = G;
+			encodedData.data[(y*encodedWidth+x)*4+2] = B;
+			encodedData.data[(y*encodedWidth+x)*4+3] = A;
+		}
+
+		// apply color to our widened encoded image
+		for (var x = 0; x < encoded2Width; ++x)
+		{
+			encoded2Data.data[(y*encoded2Width+x)*4+0] = R;
+			encoded2Data.data[(y*encoded2Width+x)*4+1] = G;
+			encoded2Data.data[(y*encoded2Width+x)*4+2] = B;
+			encoded2Data.data[(y*encoded2Width+x)*4+3] = A;
+		}			
+	}
+	*/
+
 	// copy the pixels in
 	g_encodedPanel.context.putImageData(encodedData,0,0);
 	g_encoded2Panel.context.putImageData(encoded2Data,0,0);
@@ -619,7 +650,7 @@ function RedrawResult ()
 	var resultData = g_resultPanel.context.createImageData(resultWidth,resultHeight);
 
 	// calculate the maximum distance
-	var hypotneuse = Math.sqrt((resultWidth/2)*(resultWidth/2)+(resultHeight/2)*(resultHeight/2));
+	var hypotneuse = g_useHypotneuse ? Math.sqrt((resultWidth/2)*(resultWidth/2)+(resultHeight/2)*(resultHeight/2)) : resultWidth/2;
 
 	// make the result
 	for (y = 0; y < resultHeight; ++y) {
@@ -722,6 +753,7 @@ function RedrawAll (immediate)
 	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
 	g_bilinearFilter = document.getElementById('BilinearFilter').checked;
 	g_squaredDistance = document.getElementById('SquaredDistance').checked;
+	g_useHypotneuse = document.getElementById('Hypotneuse').checked;
 
 	RedrawSource();
 	RedrawEncoded();
@@ -785,7 +817,8 @@ widened:
 <canvas class="html5" id="Encoded2" width="100" height="256">Your browser doesn't seem to support the necesary html5 features ):</canvas>
 <br/>
 Encoded:<input type="text" id="EncodedHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/><br>
-Encode Squared Distance: <input type=checkbox id="SquaredDistance" onChange="RedrawAll(true);"/>
+Encode Squared Distance: <input type=checkbox id="SquaredDistance" onChange="RedrawAll(true);"/><br>
+Use Hypotneuse (Make full rectangle usable): <input type=checkbox id="Hypotneuse" checked="true" onChange="RedrawAll(true);"/><br>
 <div id="EncodedSize"></div>
 </div>
 

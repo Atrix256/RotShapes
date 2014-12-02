@@ -1,17 +1,20 @@
 * organize code better and clean it up. maybe into separate, reusable javascript functions for other pages
 
-* an index.html for the web app stuff
-
 * a page to combine multiple rotshape images into a "spritesheet" or animation file.
  * this could maybe be the playground too?
+ * or just keep it minimal
 
 * make a 0-255 texture, look at it both as squared and unsquared distances
 
 * the thing where if you have 2 annulii next to 1 anulus, and the 1 anulus is closer to the outer anulus, push it out to the second one, to help bilinear filtering
 
+* even with a programatically perfect target, we have a problem at angle 0 with bilinear filtering.   should be easy enough to track and fix!
+
+* even with a programattically perfect spiral, we have a problem with noise. AA? not sure what the deal is... maybe need to try C++ barebones encoder and see if it has same result.
+
 =====
 
-* put style stuff in a style sheet and re-use it!
+* in the encoder, we could have a place to put javascript to algorithmically generate shapes.
 
 * a command line encoder / decoder to remove AA from the equation and to have another way to do it.
 
