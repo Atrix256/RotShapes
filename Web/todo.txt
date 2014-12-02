@@ -1,39 +1,6 @@
-* maybe have a channel color multiplier instead of a drop down for choosing how to convert image to black / white? or leave it up to them to do more advanced conversions outside of the page.
-
-* default value for channels should be 255, r/2, g/2, b/2/  try it anyways (kinda having some issues with it when first trying it)
-
-* fix setting the image twice, etc.
-
-* try w/ color images
-
-* implement color conversion to black/white
- * maybe let people put in a cusrtom color instead of choosing R,G,B,greyscale?
-
-* seems like theres black dots and gaps getting into the data somehow. need to figure that out.
- * investigate in C++, but it's likely due to neighboring black pixels.  need to elimnate not just thinnest sections first, but also least wide as far as by fewerst angles on the arc.
-
- * make texture repeat work with bilinear sampling -> for wrap around!
-
- * load image support -> erase all pixels
-  * read pixel data: http://blog.teamtreehouse.com/reading-files-using-the-html5-filereader-api
-
-* double check that we aren't ever reading out of bounds.  like esp in the results reading of the encoded image
- * could make a helper function to sample pixels from image data, and pass it a flag to bilinear sample or not.
- * could try bilinear sampling source image... but then again maybe not since it should be just black/white!
-
-* organize code better and clean it up
-
-* bug: the anti aliasing (smoothstep) is what causes the hole in the middle when the middle is filled in, fix! (maybe symptom of bug below)
-
-* bug: fill in the middle, set to 512x512 results and 1024 encoded. problems!
+* organize code better and clean it up. maybe into separate, reusable javascript functions for other pages
 
 * test in IE, Firefox, and on mac
-
-
-* there are definitely some non black & white pixels in the source data when reading it.  that might be causing problems with the encoding.
- * could try saving image and forcing it to white/black and re-loading it, and seeing difference
-
- * Another pass on the data where if there's only one entry next to serving with to entries, make it in the closer one
 
 =====
 
@@ -83,6 +50,18 @@ Later...
 
 =====RESEARCH=====
 
+* seems like theres black dots and gaps getting into the data somehow. need to figure that out.
+ * investigate in C++, but it's likely due to neighboring black pixels.  need to elimnate not just thinnest sections first, but also least wide as far as by fewerst angles on the arc.
+
+* bug: the anti aliasing (smoothstep) is what causes the hole in the middle when the middle is filled in, fix! (maybe symptom of bug below)
+
+* bug: fill in the middle, set to 512x512 results and 1024 encoded. problems!
+
+* there are definitely some non black & white pixels in the source data when reading it.  that might be causing problems with the encoding.
+ * could try saving image and forcing it to white/black and re-loading it, and seeing difference
+
+* default value for channels should be 255, r/2, g/2, b/2/  try it anyways (kinda having some issues with it when first trying it)
+
 * source/result image 256,256. changing encoded size matters, but keeps the same shape.  result to 512,512 and suddenly all sorts of artifacts start coming out! (bilinear sampling off)
  * maybe just a bug? or some inherant issue that needs looking at!
  * probably due to encoding.  we don't fill in multiple buckets when encoding, so there is probably uninitialized information in those buckets.
@@ -92,6 +71,9 @@ Later...
 * use shape as alpha texture for texture for decaling
 
 * do texture offset to rotate image
+
+
+* try w/ color (animated?) source images converted into multiple layers
 
 =====NOTES=====
 

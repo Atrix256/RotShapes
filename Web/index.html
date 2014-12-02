@@ -21,7 +21,7 @@ var g_squaredDistance = false;
 var g_color = 1;
 
 var g_clicks = new Array();
-var g_image = null;
+var g_imageData = null;
 
 var g_redrawTimer = 0;
 
@@ -115,7 +115,7 @@ function UndoSource(mousePos, drag)
 function ClearSource ()
 {
 	g_clicks = new Array();
-	g_image = null;
+	g_imageData = null;
 	RedrawAll(true);
 }
 
@@ -173,8 +173,8 @@ function RedrawSource()
 {
 	g_sourcePanel.clear();
 
-	if (g_image != null)
-		g_sourcePanel.context.drawImage(g_image,0,0);
+	if (g_imageData != null)
+		g_sourcePanel.context.putImageData(g_imageData,0,0);
 
 	g_sourcePanel.context.lineJoin = "round";
 
@@ -251,15 +251,35 @@ function SortBuckets(a,b) {
 	return a.distSq - b.distSq;
 }
 
-function ConvertImage ()
+function ConvertImage (image)
 {
-	if (g_image == null)
-		return;
-
 	var canvas = document.createElement('canvas');
+	canvas.width = image.width;
+	canvas.height = image.height;
 	var context = canvas.getContext('2d');
-	context.drawImage(g_image, 0, 0 );
-	var imgData = context.getImageData(0, 0, g_image.width, g_image.height);
+	context.drawImage(image, 0, 0, image.width, image.height );
+	g_imageData = context.getImageData(0, 0, image.width, image.height);
+
+	for (var y = 0; y < image.height; ++y)
+	{
+		for (var x = 0; x < image.width; ++x)
+		{
+			var grey =
+				g_imageData.data[(y*image.width+x)*4+0] * 0.3 +
+				g_imageData.data[(y*image.width+x)*4+1] * 0.59 +
+				g_imageData.data[(y*image.width+x)*4+2] * 0.11;
+
+			if (grey > 127)
+				grey = 255;
+			else
+				grey = 0;
+
+			g_imageData.data[(y*image.width+x)*4+0] = grey;
+			g_imageData.data[(y*image.width+x)*4+1] = grey;
+			g_imageData.data[(y*image.width+x)*4+2] = grey;
+			g_imageData.data[(y*image.width+x)*4+3] = 255;
+		}
+	}
 }
 
 function LoadFile ()
@@ -273,14 +293,17 @@ function LoadFile ()
 	// load the image
 	var reader = new FileReader();
 	reader.onload = function(e) {
-	    g_image = new Image();
-	    g_image.src = reader.result;
+	    var image = new Image();
+	    image.src = reader.result;
 
 	    // make sure the image is black and white
-	    ConvertImage();
+	    ConvertImage(image);
 
 		// redraw everything
 	    RedrawAll(true);
+
+	    // clear the file chosen
+	    document.getElementById('fileLoader').value = null;
   	}
 	reader.readAsDataURL(document.getElementById('fileLoader').files[0]); 	
 }
@@ -532,7 +555,7 @@ function GetEncodedPixelChannel (encodedData, encodedWidth, encodedHeight, normA
 	// for animations
 	var fract = normAngle % 1;
 	var heightA = Math.floor(normAngle) % encodedHeight;
-	var heightB = (pixelA+1) % encodedHeight;
+	var heightB = (heightA+1) % encodedHeight;
 
 	var ret =
 		encodedData.data[heightA*encodedWidth*4+channel] * (1-fract) +
@@ -742,14 +765,7 @@ Source:<input type="text" id="SourceWidth" value="256" style="width:4em" onChang
 <input type=button value="Undo" onClick="UndoSource()"/>
 <input type=button value="Clear" onClick="ClearSource()"/><br><br>
 Load Image:
-<input type=file id="fileLoader" onChange="LoadFile();"/><br>
-Color Conversion:
-<select id="imageConversion">
-  <option value="GreyScale">Grey Scale</option>
-  <option value="Red">Red Channel</option>
-  <option value="Green">Green Channel</option>
-  <option value="Blue">Blue Channel</option>
-</select>
+<input type=file id="fileLoader" onChange="LoadFile();"/>
 <div id="SourceSize"></div>
 </div>
 
