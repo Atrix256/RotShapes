@@ -635,6 +635,7 @@ function RedrawResult ()
 			if (normAngle < 0)
 				normAngle += Math.PI * 2;
 			normAngle /= Math.PI*2;
+			normAngle = normAngle % 1;
 			normAngle *= encodedHeight;
 
 			// read the squared distance for that angle from our encoded image, only first frame for now

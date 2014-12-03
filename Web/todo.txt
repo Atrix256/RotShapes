@@ -50,6 +50,14 @@ Later...
 
 =====RESEARCH=====
 
+* asian characters
+
+* more clipart
+
+* english characters and numbers in a couple diff fonts
+
+* try making some textures programatically, to see if you have better results than when encoding existing images.
+
 * seems like theres black dots and gaps getting into the data somehow. need to figure that out.
  * investigate in C++, but it's likely due to neighboring black pixels.  need to elimnate not just thinnest sections first, but also least wide as far as by fewerst angles on the arc.
 
