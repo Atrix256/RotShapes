@@ -1,3 +1,5 @@
+* read/write png: http://stackoverflow.com/questions/4567875/how-would-i-load-a-png-image-using-win32-gdi-no-gdi-if-possible
+
 * organize code better and clean it up. maybe into separate, reusable javascript functions for other pages
 
 * a page to combine multiple rotshape images into a "spritesheet" or animation file.
