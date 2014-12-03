@@ -1,12 +1,28 @@
 * organize code better and clean it up. maybe into separate, reusable javascript functions for other pages
 
-* test in IE, Firefox, and on mac
+* a page to combine multiple rotshape images into a "spritesheet" or animation file.
+ * this could maybe be the playground too?
+ * or just keep it minimal
+
+* make a 0-255 texture, look at it both as squared and unsquared distances
+
+* the thing where if you have 2 annulii next to 1 anulus, and the 1 anulus is closer to the outer anulus, push it out to the second one, to help bilinear filtering
+
+* even with a programatically perfect target, we have a problem at angle 0 with bilinear filtering.   should be easy enough to track and fix!
+
+* even with a programattically perfect spiral, we have a problem with noise. AA? not sure what the deal is... maybe need to try C++ barebones encoder and see if it has same result.
+
+* make the programatic code box larger
+
+* make it redraw when it loses focus or something... 
+
+* handle the squared distance thing in the custom code? (handle it for user)
+
+* make a more involved custom code interface (like a shader llanguage type thing?)
 
 =====
 
-* a page to combine multiple rotshape images into a "spritesheet" or animation file.
-
-* an index.html for the web app stuff
+* in the encoder, we could have a place to put javascript to algorithmically generate shapes.
 
 * a command line encoder / decoder to remove AA from the equation and to have another way to do it.
 
@@ -57,6 +73,8 @@ Later...
 * english characters and numbers in a couple diff fonts
 
 * try making some textures programatically, to see if you have better results than when encoding existing images.
+
+* test web stuff in IE, Firefox, and on mac
 
 * seems like theres black dots and gaps getting into the data somehow. need to figure that out.
  * investigate in C++, but it's likely due to neighboring black pixels.  need to elimnate not just thinnest sections first, but also least wide as far as by fewerst angles on the arc.
@@ -129,6 +147,10 @@ Later...
  * various situations, seem fixable with specific changes, maybe more to think about here.
  * can we stabalize it somehow?
  * maybe low pass filter changes somehow so big changes in the filter lookup are ignored?
+
+* use splines to interpolate between encoded pixels, instead of relying on bilinear filtering
+ * possibly encode spline information in the encoded data instead of just distances.
+ * could have some iterative "lease squared error" metric in encoding
 
 =====NOTES=====
 
