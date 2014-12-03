@@ -12,17 +12,11 @@
 
 * even with a programattically perfect spiral, we have a problem with noise. AA? not sure what the deal is... maybe need to try C++ barebones encoder and see if it has same result.
 
-* make the programatic code box larger
-
-* make it redraw when it loses focus or something... 
-
-* handle the squared distance thing in the custom code? (handle it for user)
-
-* make a more involved custom code interface (like a shader llanguage type thing?)
+* with the batman logo, if you make everything half as large, you can see that the hypotneuse distance isn't quite right
 
 =====
 
-* in the encoder, we could have a place to put javascript to algorithmically generate shapes.
+* let the user specify a color for each channel range (0-R, R-G, G-B, B-A).  by default it'd be black/white/black/white but doesn't have to be (plus could use this to help debug whats going on)
 
 * a command line encoder / decoder to remove AA from the equation and to have another way to do it.
 
@@ -97,7 +91,6 @@ Later...
 * use shape as alpha texture for texture for decaling
 
 * do texture offset to rotate image
-
 
 * try w/ color (animated?) source images converted into multiple layers
 

@@ -545,7 +545,43 @@ function RedrawEncoded ()
 		var slice = y;
 		var numSlices = encodedHeight;
 
+		if (g_squaredDistance)
+		{
+			pixelArray[0] = Math.sqrt(pixelArray[0]);
+			pixelArray[1] = Math.sqrt(pixelArray[1]);
+			pixelArray[2] = Math.sqrt(pixelArray[2]);
+			pixelArray[3] = Math.sqrt(pixelArray[3]);
+		}
+
 		eval(document.getElementById('CustomShapeCode').value);
+
+		if (pixelArray[0] < 0)
+			pixelArray[0] = 0;
+		else if (pixelArray[0] > 1)
+			pixelArray[0] = 1;
+
+		if (pixelArray[1] < 0)
+			pixelArray[1] = 0;
+		else if (pixelArray[1] > 1)
+			pixelArray[1] = 1;
+
+		if (pixelArray[2] < 0)
+			pixelArray[2] = 0;
+		else if (pixelArray[2] > 1)
+			pixelArray[2] = 1;
+
+		if (pixelArray[3] < 0)
+			pixelArray[3] = 0;
+		else if (pixelArray[3] > 1)
+			pixelArray[3] = 1;	
+
+		if (g_squaredDistance)
+		{
+			pixelArray[0] = pixelArray[0]*pixelArray[0];
+			pixelArray[1] = pixelArray[1]*pixelArray[1];
+			pixelArray[2] = pixelArray[2]*pixelArray[2];
+			pixelArray[3] = pixelArray[3]*pixelArray[3];
+		}							
 
 		encodedData.data[(y*encodedWidth)*4+0] = pixelArray[0] * 255;
 		encodedData.data[(y*encodedWidth)*4+1] = pixelArray[1] * 255;
@@ -561,41 +597,6 @@ function RedrawEncoded ()
 			encoded2Data.data[(y*encoded2Width+x)*4+3] = encodedData.data[(y*encodedWidth)*4+3];
 		}	
 	}
-	
-
-	/*
-	// TEMP! for making a basic distance image. leave until we can put custom javascript in the page to run
-	for (var y = 0; y < encodedHeight; ++y)
-	{
-		var R = y/2;
-		var G = y;
-		var B = y;
-		var A = y;
-
-		//var R = 32;
-		//var G = 64;
-		//var B = 128;
-		//var A = 192;
-
-		// apply color to our encoded image
-		for (var x = 0; x < encodedWidth; ++x)
-		{
-			encodedData.data[(y*encodedWidth+x)*4+0] = R;
-			encodedData.data[(y*encodedWidth+x)*4+1] = G;
-			encodedData.data[(y*encodedWidth+x)*4+2] = B;
-			encodedData.data[(y*encodedWidth+x)*4+3] = A;
-		}
-
-		// apply color to our widened encoded image
-		for (var x = 0; x < encoded2Width; ++x)
-		{
-			encoded2Data.data[(y*encoded2Width+x)*4+0] = R;
-			encoded2Data.data[(y*encoded2Width+x)*4+1] = G;
-			encoded2Data.data[(y*encoded2Width+x)*4+2] = B;
-			encoded2Data.data[(y*encoded2Width+x)*4+3] = A;
-		}			
-	}
-	*/
 
 	// copy the pixels in
 	g_encodedPanel.context.putImageData(encodedData,0,0);
@@ -857,7 +858,12 @@ Programatic Javascript Shape:<br>
 <br>
 function AlterDistance (slice, numSlices, pixelArray)<br>
 {<br>
-<textarea id="CustomShapeCode"></textarea><br>
+<textarea id="CustomShapeCode" style="width:100%;height:200px;" onChange="RedrawAll(false);">
+pixelArray[0] *= 1;
+pixelArray[1] *= 1;
+pixelArray[2] *= 1;
+pixelArray[3] *= 1;
+</textarea><br>
 &nbsp;&nbsp;return pixelArray;<br>
 }
 </div>
