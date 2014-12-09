@@ -9,7 +9,7 @@ void main (int argc, char **argv)
     Platform::Init();
     
     CImageData imageData;
-    if (!Platform::LoadImageFile(L"../Assets/batman_256.png", imageData))
+    if (!Platform::LoadImageFile(L"../Assets/female_256.png", imageData))
         printf("Could not load image!");
     else
         printf("image loaded");

@@ -7,6 +7,8 @@
 // WIC COM interface
 static IWICImagingFactory *s_factory = NULL;
 
+#pragma comment(lib,"windowscodecs.lib")
+
 namespace Platform
 {
     bool Init ()
@@ -55,26 +57,45 @@ namespace Platform
         if (!SUCCEEDED(hr) || !bitmap)
             return false;
 
-        // lock the bitmap (TODO: get image width / height somehow)
-        WICRect lockRect = { 0, 0, 256, 256 };
-        IWICBitmapLock* lock = NULL;
-        hr = bitmap->Lock(&lockRect, WICBitmapLockRead | WICBitmapLockWrite, &lock);
-        if (!SUCCEEDED(hr) || !lock)
+        // get bitmap height / width
+        UINT width, height;
+        hr = bitmap->GetSize(&width, &height);
+        if (!SUCCEEDED(hr))
             return false;
 
-        UINT bufferSize = 0;
-        BYTE* pixels = NULL;
-        hr = lock->GetDataPointer(&bufferSize, &pixels);
-        if (!SUCCEEDED(hr) || !pixels || !bufferSize)
+        // get the pixel format
+        WICPixelFormatGUID pixelFormat; 
+        hr = bitmap->GetPixelFormat(&pixelFormat);
+        if (!SUCCEEDED(hr))
+            return false;
+
+        // convert to black and white 1 bit per pixel
+        IWICBitmapSource * convertedBitmap = NULL;
+        hr = WICConvertBitmapSource(GUID_WICPixelFormatBlackWhite, bitmap, &convertedBitmap);
+        if (!SUCCEEDED(hr) || !convertedBitmap)
+            return false;
+
+        // TODO: copy the pixels to a CImageData
+        UINT stride = width / 8;
+        if (width % 8)
+            stride++;
+        
+        UINT bufferSize = stride*height;
+        unsigned char* pixels = new unsigned char[bufferSize];
+
+        WICRect rc = {0, 0, width, height};
+        hr = convertedBitmap->CopyPixels(&rc,stride,bufferSize,pixels);
+        if (!SUCCEEDED(hr))
             return false;
 
         // free the frame and decoder etc
-        lock->Release();
+        convertedBitmap->Release();
         bitmap->Release();
         frame->Release();
         decoder->Release();
 
-        // TODO: make sure image is 32 bpp etc!
+        delete[] pixels;
+
         // TODO: return error if multiple frames found? or what?
         // TODO: better error handling
         // TODO: some templated wrapper object that destroys COM objects at object destructiuon time!
