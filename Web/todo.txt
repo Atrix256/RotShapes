@@ -113,6 +113,15 @@ Later...
 
  * valve distance texture references!
 
+Signed distance fields with sharp boundaries (harvest for more references too!)
+http://lambdacube3d.wordpress.com/2014/11/12/playing-around-with-font-rendering/
+
+diffusion curves?
+http://maverick.inria.fr/Publications/2008/OBWBTS08/
+
+generalized vornoi diagrams?
+https://www.sthu.org/research/voronoidiagrams/
+
 =====FUTURE WORK=====
 
 * some kind of blur pass to smooth data (but might lose details from source image!)

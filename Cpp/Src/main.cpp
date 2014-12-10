@@ -5,14 +5,23 @@
 void main (int argc, char **argv)
 {
     // TODO: usage, and command line param parsing!
-    // TODO: error handling for if init fails
-    Platform::Init();
+    do
+    {
+        if (!Platform::Init())
+            break;
     
-    CImageData imageData;
-    if (!Platform::LoadImageFile(L"../Assets/female_256.png", imageData))
-        printf("Could not load image!");
-    else
-        printf("image loaded");
+        CImageDataBlackWhite sourceImageData;
+        if (!Platform::LoadImageFileBlackWhite(L"../Assets/female_256.png", sourceImageData))
+            Platform::ReportError("Could not load image!");
+        else
+            Platform::ReportError("image loaded");
+        
+        // TODO: init to the size based on command line params for encoding!
+        CImageDataRGBA encodedImageData;
+        //encodedImageData.AllocatePixels();
+
+    }
+    while (0);
 
     Platform::Shutdown();
 }

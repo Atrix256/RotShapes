@@ -2,7 +2,7 @@
 //--------------------------------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------------------------------
-class CImageData;
+class CImageDataBlackWhite;
 
 //--------------------------------------------------------------------------------------------------------------
 // Platform interface
@@ -12,5 +12,7 @@ namespace Platform
     bool Init ();
     void Shutdown ();
 
-    bool LoadImageFile (const wchar_t* fileName, CImageData& imageData);
+    bool LoadImageFileBlackWhite (const wchar_t* fileName, CImageDataBlackWhite& imageData);
+
+    void ReportError (const char* format, ...);
 };
