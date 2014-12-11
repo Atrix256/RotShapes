@@ -1,8 +1,9 @@
 // TODO: common interface? or maybe a template class with specializations?
 // TODO: intro comments in header for file name and description
-// TODO: stride should be implicit.  maybe if it's a tempalted class, stride can be a compile time constant based on template params!
+// TODO: stride should be implicit maybe.  maybe if it's a templated class, stride can be a compile time constant based on template params!
 
 //--------------------------------------------------------------------------------------------------------------
+template <unsigned int CHANNELS, unsigned int BITSPERCHANNEL>
 class CImageData
 {
 public:
@@ -23,7 +24,14 @@ public:
     }
 
     // this function takes ownership over the pixels memory and is responsible for freeing it
-    void SetPixels (unsigned int width, unsigned int height, unsigned int stride, unsigned char *pixels);
+    void SetPixels (unsigned int width, unsigned int height, unsigned int stride, unsigned char *pixels)
+    {
+        Clear();
+        m_pixels = pixels;
+        m_width = width;
+        m_height = height;
+        m_stride = stride;
+    }
 
     //void AllocatePixels ();
 
@@ -35,14 +43,14 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------------------------
-class CImageDataBlackWhite : public CImageData
+class CImageDataBlackWhite : public CImageData<1,1>
 {
 public:
 private:
 };
 
 //--------------------------------------------------------------------------------------------------------------
-class CImageDataRGBA : public CImageData
+class CImageDataRGBA: public CImageData<4,8>
 {
 public:
 private:
