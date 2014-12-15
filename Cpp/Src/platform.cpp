@@ -5,6 +5,7 @@
 
 #include <Windows.h>
 #include <Wincodecsdk.h>
+#include <comdef.h>
 
 #pragma comment(lib,"windowscodecs.lib")
 
@@ -13,19 +14,25 @@ static IWICImagingFactory *s_factory = NULL;
 
 namespace Platform
 {
+    // prototypes
+    const char* GetMessageForHresult(HRESULT hr);
+    static void ReportErrorHRESULT (HRESULT, const char* format, ...);
+
     //--------------------------------------------------------------------------------------------------------------
     bool Init ()
     {
         // init com and create the imaging factory
-        if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED)))
+        HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+        if (!SUCCEEDED(hr))
         {
-            ReportError(__FUNCTION__" Failed: CoInitializeEx failed");
+            ReportErrorHRESULT(hr, __FUNCTION__" Failed: CoInitializeEx failed");
             return false;
         }
             
-        if (!SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory,NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&s_factory))))
+        hr = CoCreateInstance(CLSID_WICImagingFactory,NULL, CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&s_factory));
+        if (!SUCCEEDED(hr))
         {
-            ReportError(__FUNCTION__" Failed: CoCreateInstance CLSID_WICImagingFactory failed");
+            ReportErrorHRESULT(hr, __FUNCTION__" Failed: CoCreateInstance CLSID_WICImagingFactory failed");
             return false;
         }
 
@@ -45,7 +52,7 @@ namespace Platform
     }
 
     //--------------------------------------------------------------------------------------------------------------
-    bool LoadImageFileBlackWhite (const wchar_t* fileName, CImageDataBlackWhite& imageData)
+    bool LoadImageFile (const wchar_t* fileName, CImageDataBlackWhite& imageData)
     {
         // taken from http://msdn.microsoft.com/en-us/library/ee719794(v=vs.85).aspx
         // and http://msdn.microsoft.com/en-us/library/windows/desktop/ee719661%28v=vs.85%29.aspx
@@ -64,7 +71,7 @@ namespace Platform
                 &decoder);
             if (!SUCCEEDED(hr) || !decoder)
             {
-                ReportError(__FUNCTION__" Failed: CreateDecoderFromFilename with file '%s'", fileName);
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: CreateDecoderFromFilename with file '%s'", fileName);
                 ret = false;
                 break;
             }
@@ -73,7 +80,7 @@ namespace Platform
             hr = decoder->GetFrameCount(&frameCount);
             if (!SUCCEEDED(hr) || frameCount != 1)
             {
-                ReportError(__FUNCTION__" Failed: frame count = ", frameCount);
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: frame count = ", frameCount);
                 ret = false;
                 break;
             }
@@ -82,7 +89,7 @@ namespace Platform
             hr = decoder->GetFrame(0, &frame);
             if (!SUCCEEDED(hr) || !frame)
             {
-                ReportError(__FUNCTION__" Failed: could not get frame");
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not get frame");
                 ret = false;
                 break;
             }
@@ -94,7 +101,7 @@ namespace Platform
               &bitmap);              // Pointer to the bitmap
             if (!SUCCEEDED(hr) || !bitmap)
             {
-                ReportError(__FUNCTION__" Failed: could not create bitmap");
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not create bitmap");
                 ret = false;
                 break;
             }
@@ -104,7 +111,7 @@ namespace Platform
             hr = bitmap->GetSize(&width, &height);
             if (!SUCCEEDED(hr))
             {
-                ReportError(__FUNCTION__" Failed: could not get image size");
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not get image size");
                 ret = false;
                 break;
             }
@@ -114,7 +121,7 @@ namespace Platform
             hr = bitmap->GetPixelFormat(&pixelFormat);
             if (!SUCCEEDED(hr))
             {
-                ReportError(__FUNCTION__" Failed: could not get pixel format");
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not get pixel format");
                 ret = false;
                 break;
             }
@@ -123,7 +130,7 @@ namespace Platform
             hr = WICConvertBitmapSource(GUID_WICPixelFormatBlackWhite, bitmap, &convertedBitmap);
             if (!SUCCEEDED(hr) || !convertedBitmap)
             {
-                ReportError(__FUNCTION__" Failed: could not convert image to black and white");
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image to black and white");
                 ret = false;
                 break;
             }
@@ -139,7 +146,7 @@ namespace Platform
             hr = convertedBitmap->CopyPixels(&rc,stride,bufferSize,pixels);
             if (!SUCCEEDED(hr))
             {
-                ReportError(__FUNCTION__" Failed: could not copy pixel data");
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not copy pixel data");
                 ret = false;
                 break;
             }
@@ -147,7 +154,6 @@ namespace Platform
             // give the pixels to the image  data
             imageData.SetPixels(width, height, stride, pixels);
             pixels = NULL;
-
         }
         while(0);
 
@@ -171,11 +177,153 @@ namespace Platform
     }
 
     //--------------------------------------------------------------------------------------------------------------
+    bool SaveImageFile (const wchar_t* fileName, const CImageDataRGBA& imageData)
+    {
+        // info taken from http://msdn.microsoft.com/en-us/library/windows/desktop/ff973956.aspx
+        // and http://msdn.microsoft.com/en-us/library/windows/desktop/ee690141%28v=vs.85%29.aspx
+        
+        bool ret = true;
+        IWICBitmapEncoder* encoder = NULL;
+        IWICStream* stream = NULL;
+        IWICBitmapFrameEncode* frameEncode = NULL;
+
+        do {
+            HRESULT hr = s_factory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder);
+            if (!SUCCEEDED(hr) || encoder == NULL)
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: CreateEncoder");
+                ret = false;
+                break;
+            }
+
+            hr = s_factory->CreateStream(&stream);
+            if (!SUCCEEDED(hr) || stream == NULL)
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: CreateStream");
+                ret = false;
+                break;
+            }
+
+            hr = stream->InitializeFromFilename(fileName, GENERIC_WRITE);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: stream InitializeFromFilename");
+                ret = false;
+                break;
+            }
+
+            hr = encoder->Initialize(stream, WICBitmapEncoderNoCache);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: encoder initialize ");
+                ret = false;
+                break;
+            }
+
+            // create a new frame for our image data
+            hr = encoder->CreateNewFrame(&frameEncode, nullptr);
+            if (!SUCCEEDED(hr) || !frameEncode)
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: encoder initialize ");
+                ret = false;
+                break;
+            }
+
+            // initialize the encoder
+            hr = frameEncode->Initialize(NULL);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: frame initialize ");
+                ret = false;
+                break;
+            }
+
+            // set the size of the frame
+            hr = frameEncode->SetSize(imageData.GetWidth(), imageData.GetHeight());
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: set frame size");
+                ret = false;
+                break;
+            }
+
+            // set the pixel format of the frame
+            WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat32bppBGRA;  //(GUID_WICPixelFormat32bppRGBA ?? )
+            hr = frameEncode->SetPixelFormat(&pixelFormat);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: set frame pixel format");
+                ret = false;
+                break;
+            }
+
+            // copy the pixels
+            hr = frameEncode->WritePixels(imageData.GetHeight(), imageData.GetStride(), imageData.GetPixelBufferSize(), imageData.GetPixelBuffer());
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: frame write pixels");
+                ret = false;
+                break;
+            }
+
+            // commit the frame
+            hr = frameEncode->Commit();
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: frame commit");
+                ret = false;
+                break;
+            }
+
+            // commit the encoder
+            hr = encoder->Commit();
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: encoder commit");
+                ret = false;
+                break;
+            }
+        }
+        while(0);
+
+        if (frameEncode)
+            frameEncode->Release();
+
+        if (stream)
+            stream->Release();
+
+        if (encoder)
+            encoder->Release();
+
+        return ret;
+    }
+
+    //--------------------------------------------------------------------------------------------------------------
     void ReportError (const char* format, ...)
     {
         va_list args;
         va_start (args, format);
         vprintf (format, args);
         va_end (args);
+        printf("\n");
     }
+
+    //--------------------------------------------------------------------------------------------------------------
+    static void ReportErrorHRESULT (HRESULT hr, const char* format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        vprintf(format, args);
+        va_end(args);
+        printf("\n%s\n",GetMessageForHresult(hr));
+    }
+
+    //--------------------------------------------------------------------------------------------------------------
+    static const char* GetMessageForHresult (HRESULT hr) {
+        static char retString[1024];
+        _com_error error(hr);
+        sprintf_s(retString, 1024, "Error 0x%08x: %ls", hr, error.ErrorMessage());
+        return retString;
+    }
+
 };
