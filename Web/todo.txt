@@ -1,4 +1,11 @@
-* read/write png: http://stackoverflow.com/questions/4567875/how-would-i-load-a-png-image-using-win32-gdi-no-gdi-if-possible
+* Encoding:
+ 1) make an array that is [angle][256] that has a float value in it.
+ 2) do a double for loop of angle & 256.
+ 3) Find each pixel that resides in that angle and distance, and add 1 for white, subtract 1 for black
+   3a) Possibly multiply the value by what percentage the pixel is in the arc
+ 4) greater than 0 equals white, less than zero equals black.
+
+* make javascript encoding be on parity with cpp encoding.
 
 * rename the javascript variables to make more intuitive sense.  like colorChannels instead of pixelArray.
 

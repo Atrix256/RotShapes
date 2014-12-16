@@ -1,5 +1,6 @@
 #include "platform.h"
 #include "CImageData.h"
+#include "Encoder.h"
 #include <stdio.h>
 
 void main (int argc, char **argv)
@@ -18,13 +19,16 @@ void main (int argc, char **argv)
             Platform::ReportError("source image loaded");
 
         // TODO: init to the size based on command line params for encoding!
-        // TODO: encode the image!
-        // TODO: force the encoded image to always be png?
+        // TODO: force the encoded image to always be png extension and type?
         CImageDataRGBA encodedImageData;
         encodedImageData.AllocatePixels(1,256);
+        
+        // encode the image
+        if (!Encode(sourceImageData, encodedImageData))
+            Platform::ReportError("Could not encode image!");
+        else
+            Platform::ReportError("Image encoded");
 
-        // TODO: TEMP
-        memset(encodedImageData.GetPixelBuffer(), 128, encodedImageData.GetPixelBufferSize());
 
         if (!Platform::SaveImageFile(L"blah.png",encodedImageData))
             Platform::ReportError("Could not save encoded image!");
