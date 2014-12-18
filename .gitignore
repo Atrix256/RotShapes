@@ -32,4 +32,5 @@
 *.suo
 *.vcxproj.user
 Cpp/Debug/*.*
+Cpp/Release/*.*
 *.ipch

@@ -1,3 +1,5 @@
+* gather todo's from cpp and put them here if you dont want to do them right away.
+
 * Encoding:
  1) make an array that is [angle][256] that has a float value in it.
  2) do a double for loop of angle & 256.
