@@ -34,3 +34,4 @@
 Cpp/Debug/*.*
 Cpp/Release/*.*
 *.ipch
+*.opensdf
