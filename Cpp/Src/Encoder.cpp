@@ -87,7 +87,9 @@ private:
 	template <typename TestValidFN, typename IntersectPointFN>
 	void ClipPolygonByPlane (SThreadData& threadData, TestValidFN TestValid, IntersectPointFN IntersectPoint) const
 	{
-		assert(threadData.m_polygon.size() >= 3);
+		// if no points (due to previous culling), nothing to do here!
+		if (threadData.m_polygon.size() == 0)
+			return;
 
 		// start with a fresh slate
 		threadData.m_polygonTemp.clear();
@@ -160,6 +162,15 @@ private:
 				threadData.m_polygon.push_back(SVector2(BX,BY));
 				threadData.m_polygon.push_back(SVector2(CX,CY));
 
+				// TODO: remove this debug code
+				/*
+				char temp[512];
+				sprintf(temp, "polygon (%f,%f) (%f,%f) (%f,%f)",
+					threadData.m_polygon[0].x, threadData.m_polygon[0].y,
+					threadData.m_polygon[1].x, threadData.m_polygon[1].y,
+					threadData.m_polygon[2].x, threadData.m_polygon[2].y);
+				*/
+
 				// clip polygon by minx
 				ClipPolygonByPlane(
 					threadData,
@@ -184,13 +195,50 @@ private:
 					}
 				);
 
-				// todo: test the above!
+				// clip polygon by miny
+				ClipPolygonByPlane(
+					threadData,
+					[=] (const SVector2& point) -> bool {return point.y >= (float)iy;},
+					[=] (const SVector2& A, const SVector2& B) -> SVector2
+					{
+						float percent = ((float)iy - A.y) / (B.y - A.y);
+						float x = (B.x - A.x) * percent + A.x;
+						return SVector2(x,(float)iy);
+					}
+				);
+
+				// clip polygon by maxy
+				ClipPolygonByPlane(
+					threadData,
+					[=] (const SVector2& point) -> bool {return point.y <= (float)(iy+1);},
+					[=] (const SVector2& A, const SVector2& B) -> SVector2
+					{
+						float percent = ((float)(iy+1) - A.y) / (B.y - A.y);
+						float x = (B.x - A.x) * percent + A.x;
+						return SVector2(x,(float)(iy+1));
+					}
+				);
+
+				// todo: test the above! visualize in wolfram alpha or something
 
 				// todo: clip by miny, maxy
 
 				// TODO: clip triangle against pixel to get new shape
 				// TODO: get area of shape via ear clipping
 				// TODO: multiply by -1 if pixel black, add into triangleTotal.
+
+				// TODO: remove this debug code
+				/*
+				if (threadData.m_polygon.size() == 4)
+				{
+					sprintf(temp, "polygon (%f,%f) (%f,%f) (%f,%f) (%f,%f)",
+						threadData.m_polygon[0].x, threadData.m_polygon[0].y,
+						threadData.m_polygon[1].x, threadData.m_polygon[1].y,
+						threadData.m_polygon[2].x, threadData.m_polygon[2].y,
+						threadData.m_polygon[3].x, threadData.m_polygon[3].y);
+				}
+				*/
+				int ijkl = 0;
 			}
 		}
 
