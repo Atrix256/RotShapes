@@ -7,6 +7,7 @@ void main (int argc, char **argv)
 {
     // TODO: usage, and command line param parsing!
     // TODO: if we have problems with hard coded pixel formats, maybe we can do some sort of conversion where we create a bitmap with the format we have and convert it to the format the runtime code wants
+	// TODO: add unencoding support too and all the other features like layering and animation?
     do
     {
         if (!Platform::Init())
