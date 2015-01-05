@@ -133,6 +133,9 @@ http://maverick.inria.fr/Publications/2008/OBWBTS08/
 generalized vornoi diagrams?
 https://www.sthu.org/research/voronoidiagrams/
 
+Sutherland-Hodgman algorithm (for encoding)
+http://en.wikipedia.org/wiki/Sutherland%E2%80%93Hodgman_algorithm
+
 =====FUTURE WORK=====
 
 * some kind of blur pass to smooth data (but might lose details from source image!)
