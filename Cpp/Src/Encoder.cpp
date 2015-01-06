@@ -44,7 +44,7 @@ public:
     CEncodedPixelData (const CImageDataBlackWhite& src, CImageDataRGBA& dest)
         : m_src(src)
         , m_dest(dest)
-		, c_bucketCount(dest.GetHeight() << 8)
+		, c_radialPixelCount(dest.GetHeight() << 8)
 		, c_angleCount(dest.GetHeight())
 		, c_centerX((float)src.GetWidth() / 2.0f)
 		, c_centerY((float)src.GetHeight() / 2.0f)
@@ -57,34 +57,46 @@ public:
         assert(dest.GetWidth() == 1);
     }
 
-	typedef vector<bool> TBucketType;
-	typedef TBucketType::size_type TSizeType;
+	typedef vector<bool>		TRadialPixels;
+	typedef vector<float>		TAngleRange;
+	typedef vector<TAngleRange>	TAngleRanges;
 
 	//----------------------------------------------------------------------------------------------------------
     bool Encode ()
 	{
-		// make some storage for our buckets.  size = angles * distances and there are
-		// 256 distances since they are stored in an 8 bit channel.
-		TBucketType buckets(c_bucketCount);
-
-		// reset our atomic integer which the threads use to know what work to do
-		atomic<TSizeType> nextBucket(static_cast<TSizeType>(-1));
-
-		// make a thread pool that calls our encoding thread function
+		// make a thread slot for each core we have available, making sure to at least have 1 thread
 		auto numThreads = thread::hardware_concurrency();
+		numThreads = max(numThreads, static_cast<decltype(numThreads)>(1));
 		vector<thread> threads(numThreads);
-		for (decltype(numThreads) i = 0; i < numThreads; ++i)
-			threads[i] = thread([&] () { CalcBucketsOverlapMT(buckets, nextBucket); });
 
-		// wait for our threads to be done
-		for (decltype(numThreads) i = 0; i < numThreads; ++i)
-			threads[i].join();
+		// make some storage for our radial pixels and angle ranges
+		TRadialPixels radialPixels(c_radialPixelCount);
+		TAngleRanges angleRanges(c_angleCount);
 
-		// now the buckets have the color (black/white) for each radial pixel
+		// Calculate our radial pixels using as many threads as we have cores for and wait for them to finish
+		{
+			atomic<size_t> nextPixel(static_cast<size_t>(-1));
+			for_each(threads.begin(), threads.end(), [&] (thread& t)
+				{
+					t = thread([&] () { CalcRadialPixelsMT(radialPixels, nextPixel); });
+				}
+			);
+			for_each(threads.begin(), threads.end(), [] (thread& t) { t.join(); });
+		}
 
-		// TODO: convert to ranges (RLE encoding kinda)
-		// TODO: make sure there are less than 4 ranges by removing the smallest ranges first
-		// TODO: convert to RGBA!
+		// we now have the color of each radial pixel, we need to use those to make black/white distances for
+		// each angle, so that we can encode those distances as R,G,B,A
+		{
+			atomic<size_t> nextAngle(static_cast<size_t>(-1));
+			for_each(threads.begin(), threads.end(), [&](thread& t)
+				{
+				t = thread([&]() { CalcAngleRangesMT(radialPixels, angleRanges, nextAngle); });
+				}
+			);
+			for_each(threads.begin(), threads.end(), [](thread& t) { t.join(); });
+		}
+
+		// TODO: convert to RGBA in output image!
 
 		// TODO: TEMP
         memset(m_dest.GetPixelBuffer(), 128, m_dest.GetPixelBufferSize());
@@ -94,6 +106,76 @@ public:
     }
 
 private:
+
+	//----------------------------------------------------------------------------------------------------------
+	void RemoveShortestRange (TAngleRange& range)
+	{
+		// find the shortest boundary that isn't the first black to white, or the last white to black
+		size_t shortestLengthIndex = -1;
+		float shortestLength = 1000.0f;
+		for (size_t i = 1; i < range.size() - 1; ++i)
+		{
+			float length = range[i] - range[i - 1];
+
+			if (length < shortestLength)
+			{
+				shortestLengthIndex = i;
+				shortestLength = length;
+			}
+		}
+
+		// TODO: i don't think this properly finds the shortest boundary length. HTML is probably also affected.
+		// it might just be that we are considering the first range when we shouldn't be, but not sure
+		assert(0);
+
+		// remove the shortest range found.  That means we need to erase it and the next item to merge the last
+		// range with the next range.
+		assert(shortestLengthIndex != -1);
+		range.erase(range.begin() + shortestLengthIndex, range.begin() + shortestLengthIndex + 2);
+	}
+
+	//----------------------------------------------------------------------------------------------------------
+	void CalcAngleRangesMT (const TRadialPixels &pixels, TAngleRanges &angles, atomic<size_t> &nextAngle)
+	{
+		// grab angles until we are out of range
+		auto angle = ++nextAngle;
+		while (angle < c_angleCount)
+		{
+			// get our angle range
+			TAngleRange &range = angles[angle];
+			
+			// start with an explicit black value at the start
+			range.clear();
+			range.push_back(0.0f);
+
+			// loop through all distances in this angle, making a list of where the colors change
+			bool white = false;
+			size_t base = angle << 8;
+			for (size_t dist = 0; dist < 256; ++dist)
+			{
+				if (pixels[base + dist] != white)
+				{
+					range.push_back((float)dist / 255.0f);
+					white = !white;
+				}				
+			}
+
+			// make sure there is a black value at the end
+			if (white)
+				range.push_back(1.0f);
+
+			// cut out the smallest ranges until we have 5 boundaries or fewer
+			while (range.size() > 5)
+				RemoveShortestRange(range);
+
+			// TODO: cut out the smallest ranges, until we have the right number of ranges.
+			// TODO: convert to ranges (RLE encoding kinda)
+			// TODO: make sure there are less than 4 ranges by removing the smallest ranges first
+
+			// go to the next pixel
+			angle = ++nextAngle;
+		}
+	}
 
 	//----------------------------------------------------------------------------------------------------------
 	template <typename TestValidFN, typename IntersectPointFN>
@@ -251,10 +333,10 @@ private:
 	//----------------------------------------------------------------------------------------------------------
 	float CalcAnnulusOverlapMT (SThreadData& threadData, float distMin, float distMax, float angleMin, float angleMax) const
 	{
-		// Given an anulus arc, this returns a value representing the count of white pixels minus
+		// Given an annulus arc, this returns a value representing the count of white pixels minus
 		// the total of black pixels, where each pixel is multiplied by it's area of overlap.
-		// This is to be able to detect whether the bucket (polar "pixel") should be black or white.
-		// It aproximates the annulus arc by breaking it into trapezoids and doing two triangle
+		// This is to be able to detect whether the radial pixel should be black or white.
+		// It approximates the annulus arc by breaking it into trapezoids and doing two triangle
 		// tests per trapezoid
 		/*
 		arc length = 2 * pi * radius * arcRadians   = radius * arcRadians
@@ -264,13 +346,13 @@ private:
 		const float arcLength = distMax * (angleMax - angleMin);
 
 		// we want to subdivide the arc so that there is as most 1 pixel length of arc for
-		// each section.  Since we aproximate the arc with triangles, smaller arc lengths
+		// each section.  Since we approximate the arc with triangles, smaller arc lengths
 		// are closer to reality.
 		const unsigned int numSubDivisions = (unsigned int)floor(arcLength / 1.0f) +1;
 		const float arcAngleDelta = (angleMax-angleMin)/((float)numSubDivisions);
 
 		// for each subdivision...
-		float bucketTotal = 0.0f;
+		float arcTotal = 0.0f;
 		for (unsigned int i = 0; i < numSubDivisions; ++i)
 		{
 			// calculate the min and max angle of this subdivision
@@ -303,45 +385,40 @@ private:
 			const float DY = c_centerY + sin(angle2) * distMin;
 
 			// break the trapezoid into two triangles (A,B,C) and (A,C,D)
-			// and add their overlap pixel totals into our bucket totals
-			bucketTotal += CalcTriangleOverlapMT(threadData,AX,AY,BX,BY,CX,CY);
-			bucketTotal += CalcTriangleOverlapMT(threadData,AX,AY,CX,CY,DX,DY);
+			// and add their overlap pixel totals into our arc totals
+			arcTotal += CalcTriangleOverlapMT(threadData,AX,AY,BX,BY,CX,CY);
+			arcTotal += CalcTriangleOverlapMT(threadData,AX,AY,CX,CY,DX,DY);
 		}
 
-		// return the total for this bucket
-		return bucketTotal;
+		// return the total for this arc
+		return arcTotal;
 	}
 
 	//----------------------------------------------------------------------------------------------------------
-	void CalcBucketsOverlapMT (TBucketType& buckets, atomic<TSizeType>& nextBucket) const
+	void CalcRadialPixelsMT (TRadialPixels& pixels, atomic<size_t>& nextPixel) const
 	{
 		// make our per thread data object
 		SThreadData threadData;
 
-		// grab buckets until we are out of range
-		auto bucket = ++nextBucket;
-		while (bucket < c_bucketCount)
+		// grab pixels until we are out of range
+		auto pixel = ++nextPixel;
+		while (pixel < c_radialPixelCount)
 		{
 			// calculate the distance range
-			auto bucketDistance = bucket & 0xFF;
-			float distMin = c_hypotneuse * ((float)bucketDistance) / 256.0f;
-			float distMax = c_hypotneuse * ((float)bucketDistance+1) / 256.0f;
+			auto pixelDistance = pixel & 0xFF;
+			float distMin = c_hypotneuse * ((float)pixelDistance) / 256.0f;
+			float distMax = c_hypotneuse * ((float)pixelDistance+1) / 256.0f;
 
 			// calculate the angle range
-			auto bucketAngle = bucket >> 8;
-			float angleMin = ((float)bucketAngle) * c_arcSizeRadians - c_halfArcSizeRadians;
-			float angleMax = ((float)bucketAngle) * c_arcSizeRadians + c_halfArcSizeRadians;
+			auto pixelAngle = pixel >> 8;
+			float angleMin = ((float)pixelAngle) * c_arcSizeRadians - c_halfArcSizeRadians;
+			float angleMax = ((float)pixelAngle) * c_arcSizeRadians + c_halfArcSizeRadians;
 
-			if (bucketDistance == 255)
-			{
-				int ijkl = 0;
-			}
+			// generate the pixel
+			pixels[pixel] = CalcAnnulusOverlapMT(threadData, distMin, distMax, angleMin, angleMax) > 0.0f;
 
-			// generate the bucket
-			buckets[bucket] = CalcAnnulusOverlapMT(threadData, distMin, distMax, angleMin, angleMax) > 0.0f;
-
-			// go to the next bucket
-			bucket = ++nextBucket;
+			// go to the next pixel
+			pixel = ++nextPixel;
 		}
 	}
 
@@ -350,8 +427,8 @@ private:
     CImageDataRGBA&             m_dest;
 
 	// some constants sharable across threads
-	const TSizeType c_bucketCount;
-	const TSizeType c_angleCount;
+	const size_t c_radialPixelCount;
+	const size_t c_angleCount;
 
 	const float c_centerX;
 	const float c_centerY;
