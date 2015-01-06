@@ -5,6 +5,7 @@
 //--------------------------------------------------------------------------------------------------------------
 
 #include <memory.h>
+#include <assert.h>
 
 template <unsigned int CHANNELS, unsigned int BITSPERCHANNEL>
 class CImageData
@@ -69,6 +70,14 @@ private:
 class CImageDataBlackWhite : public CImageData<1,1>
 {
 public:
+	bool GetPixel (size_t x, size_t y) const
+	{
+		assert(x < GetWidth());
+		assert(y < GetHeight());
+		unsigned char *pixelRow = GetPixelBuffer() + y * GetStride();
+		return (pixelRow[x/8] & (1 << (x%8))) != 0;
+	}
+
 private:
 };
 

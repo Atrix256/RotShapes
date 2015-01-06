@@ -2,7 +2,6 @@
 #include "CImageData.h"
 #include <vector>
 #include <array>
-#include <assert.h>
 #include <atomic>
 #include <thread>
 
@@ -11,7 +10,6 @@
 
 using namespace std;
 
-
 //--------------------------------------------------------------------------------------------------------------
 struct SVector2
 {
@@ -19,6 +17,18 @@ struct SVector2
 	float x;
 	float y;
 };
+
+//--------------------------------------------------------------------------------------------------------------
+static bool operator == (const SVector2& A, const SVector2& B)
+{
+	return A.x == B.x && A.y == B.y;
+}
+
+//--------------------------------------------------------------------------------------------------------------
+static float TriArea (const SVector2& A, const SVector2& B, const SVector2& C)
+{
+	return abs((A.x - C.x) * (B.y - C.y) - (A.y - C.y) * (B.x - C.x))*0.5f;
+}
 
 //--------------------------------------------------------------------------------------------------------------
 struct SThreadData
@@ -71,6 +81,8 @@ public:
 			threads[i].join();
 
 		// now the buckets have the color (black/white) for each radial pixel
+
+		// TODO: convert to ranges (RLE encoding kinda)
 		// TODO: make sure there are less than 4 ranges by removing the smallest ranges first
 		// TODO: convert to RGBA!
 
@@ -143,9 +155,6 @@ private:
 		maxX = min(maxX, c_maxX);
 		maxY = min(maxY, c_maxY);
 
-		// TODO: make sure the above works correct when entire triangle is out of bounds
-		// like if both y's are negative, it'll get pushed to zero and the <= below will make it test a pixel!
-
 		// for each pixel in the bounding box
 		int sx = (int)minX;
 		int sy = (int)minY;
@@ -161,15 +170,6 @@ private:
 				threadData.m_polygon.push_back(SVector2(AX,AY));
 				threadData.m_polygon.push_back(SVector2(BX,BY));
 				threadData.m_polygon.push_back(SVector2(CX,CY));
-
-				// TODO: remove this debug code
-				/*
-				char temp[512];
-				sprintf(temp, "polygon (%f,%f) (%f,%f) (%f,%f)",
-					threadData.m_polygon[0].x, threadData.m_polygon[0].y,
-					threadData.m_polygon[1].x, threadData.m_polygon[1].y,
-					threadData.m_polygon[2].x, threadData.m_polygon[2].y);
-				*/
 
 				// clip polygon by minx
 				ClipPolygonByPlane(
@@ -219,26 +219,28 @@ private:
 					}
 				);
 
-				// todo: test the above! visualize in wolfram alpha or something
-
-				// todo: clip by miny, maxy
-
-				// TODO: clip triangle against pixel to get new shape
-				// TODO: get area of shape via ear clipping
-				// TODO: multiply by -1 if pixel black, add into triangleTotal.
-
-				// TODO: remove this debug code
-				/*
-				if (threadData.m_polygon.size() == 4)
+				// remove redundant points in the polygon
+				for (auto i = threadData.m_polygon.size(); i > 1; --i)
 				{
-					sprintf(temp, "polygon (%f,%f) (%f,%f) (%f,%f) (%f,%f)",
-						threadData.m_polygon[0].x, threadData.m_polygon[0].y,
-						threadData.m_polygon[1].x, threadData.m_polygon[1].y,
-						threadData.m_polygon[2].x, threadData.m_polygon[2].y,
-						threadData.m_polygon[3].x, threadData.m_polygon[3].y);
+					if (threadData.m_polygon[i-1] == threadData.m_polygon[i-2])
+						threadData.m_polygon.erase(threadData.m_polygon.begin()+(i-1));
 				}
-				*/
-				int ijkl = 0;
+
+				// black pixels subtract from the total, white pixels add into the total
+				float multiplier = m_src.GetPixel(ix, iy) ? 1.0f : -1.0f;
+
+				// add area of polygon into triangleTotal, using ear clipping.  The polygon is garaunteed convex since it's
+				// a triangle clipped to a square.  Also garaunteed to be in clockwise order.
+				// If we have points 0...N, our first ear clipping triangle is points 0,1,2.
+				// We'd then remove point 1 and handle the next triangle: 0,2,3
+				// We'd then remove point 2 and handle the next triangle: 0,3,4
+				// We simulate that without actually modifying the polygon array
+				for (size_t i = 2, c = threadData.m_polygon.size(); i < c; ++i)
+				{
+					triangleTotal +=
+						TriArea(threadData.m_polygon[0], threadData.m_polygon[i-1], threadData.m_polygon[i])
+						* multiplier;
+				}
 			}
 		}
 
