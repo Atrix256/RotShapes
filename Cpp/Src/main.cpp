@@ -19,6 +19,8 @@ void main (int argc, char **argv)
         else
             Platform::ReportError("source image loaded");
 
+		// TODO: make it spit out the b&w source, the intermediate, and the encoded.
+		// TODO: keep command line param for it to spit out b&w translated source!
         // TODO: init to the size based on command line params for encoding!
         // TODO: force the encoded image to always be png extension and type?
         CImageDataRGBA encodedImageData;

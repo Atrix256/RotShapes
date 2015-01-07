@@ -57,9 +57,9 @@ public:
         assert(dest.GetWidth() == 1);
     }
 
-	typedef vector<bool>		TRadialPixels;
-	typedef vector<float>		TAngleRange;
-	typedef vector<TAngleRange>	TAngleRanges;
+	typedef vector<bool>			TRadialPixels;
+	typedef vector<unsigned char>	TAngleRange;
+	typedef vector<TAngleRange>		TAngleRanges;
 
 	//----------------------------------------------------------------------------------------------------------
     bool Encode ()
@@ -97,9 +97,19 @@ public:
 		}
 
 		// TODO: convert to RGBA in output image!
+		// TODO: i don't think 0,1,2,3 is R,G,B,A. how can we deal with that?
+		unsigned char *pixelBuffer = m_dest.GetPixelBuffer();
+		for_each(angleRanges.begin(), angleRanges.end(), [&pixelBuffer] (const TAngleRange& range) {
+				pixelBuffer[0] = 64;
+				pixelBuffer[1] = 128;
+				pixelBuffer[2] = 192;
+				pixelBuffer[3] = 255;
+				pixelBuffer += 4;
+			}
+		);		
 
 		// TODO: TEMP
-        memset(m_dest.GetPixelBuffer(), 128, m_dest.GetPixelBufferSize());
+        //memset(m_dest.GetPixelBuffer(), 128, m_dest.GetPixelBufferSize());
 
         // return success
         return true;
@@ -112,10 +122,10 @@ private:
 	{
 		// find the shortest boundary that isn't the first black to white, or the last white to black
 		size_t shortestLengthIndex = -1;
-		float shortestLength = 1000.0f;
-		for (size_t i = 1; i < range.size() - 1; ++i)
+		unsigned char shortestLength = 255;
+		for (size_t i = 2; i < range.size() - 1; ++i)
 		{
-			float length = range[i] - range[i - 1];
+			unsigned char length = range[i] - range[i - 1];
 
 			if (length < shortestLength)
 			{
@@ -124,14 +134,10 @@ private:
 			}
 		}
 
-		// TODO: i don't think this properly finds the shortest boundary length. HTML is probably also affected.
-		// it might just be that we are considering the first range when we shouldn't be, but not sure
-		assert(0);
-
 		// remove the shortest range found.  That means we need to erase it and the next item to merge the last
 		// range with the next range.
 		assert(shortestLengthIndex != -1);
-		range.erase(range.begin() + shortestLengthIndex, range.begin() + shortestLengthIndex + 2);
+		range.erase(range.begin() + shortestLengthIndex - 1, range.begin() + shortestLengthIndex + 1);
 	}
 
 	//----------------------------------------------------------------------------------------------------------
@@ -146,7 +152,7 @@ private:
 			
 			// start with an explicit black value at the start
 			range.clear();
-			range.push_back(0.0f);
+			range.push_back(0);
 
 			// loop through all distances in this angle, making a list of where the colors change
 			bool white = false;
@@ -155,22 +161,18 @@ private:
 			{
 				if (pixels[base + dist] != white)
 				{
-					range.push_back((float)dist / 255.0f);
+					range.push_back(dist);
 					white = !white;
 				}				
 			}
 
 			// make sure there is a black value at the end
 			if (white)
-				range.push_back(1.0f);
+				range.push_back(255);
 
 			// cut out the smallest ranges until we have 5 boundaries or fewer
 			while (range.size() > 5)
 				RemoveShortestRange(range);
-
-			// TODO: cut out the smallest ranges, until we have the right number of ranges.
-			// TODO: convert to ranges (RLE encoding kinda)
-			// TODO: make sure there are less than 4 ranges by removing the smallest ranges first
 
 			// go to the next pixel
 			angle = ++nextAngle;

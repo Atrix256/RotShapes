@@ -1,3 +1,9 @@
+CPP: make asserts happen in release too!
+
+web/cpp decode: be able to show diff sections as diff colors.  could help debug the bilinear filtering issue.
+
+web: can we not block the main thread?
+
 * gather todo's from cpp and put them here if you dont want to do them right away.
 
 * Encoding:
