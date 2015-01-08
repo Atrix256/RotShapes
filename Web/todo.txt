@@ -1,5 +1,7 @@
 CPP: make asserts happen in release too!
 
+CPP: sometimes i get an exception on startup, must be some sort of threading thing.  i looked once in debug and "this" was null in the first MT function.  maybe something about capturing by reference in a lambda in a lambda?
+
 web/cpp decode: be able to show diff sections as diff colors.  could help debug the bilinear filtering issue.
 
 web: can we not block the main thread?

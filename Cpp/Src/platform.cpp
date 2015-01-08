@@ -248,9 +248,9 @@ namespace Platform
             }
 
             // set the pixel format of the frame
-            WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat32bppBGRA;  //(GUID_WICPixelFormat32bppRGBA ?? )
+            WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat32bppBGRA;  //(GUID_WICPixelFormat32bppRGBA ??)
             hr = frameEncode->SetPixelFormat(&pixelFormat);
-            if (!SUCCEEDED(hr))
+			if (!SUCCEEDED(hr) || pixelFormat != GUID_WICPixelFormat32bppBGRA)
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: set frame pixel format");
                 ret = false;

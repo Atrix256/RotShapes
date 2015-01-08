@@ -96,20 +96,17 @@ public:
 			for_each(threads.begin(), threads.end(), [](thread& t) { t.join(); });
 		}
 
-		// TODO: convert to RGBA in output image!
-		// TODO: i don't think 0,1,2,3 is R,G,B,A. how can we deal with that?
+		// image format is BGRA (defined in Platform::SaveImageFile() by necesity), but we want to encode
+		// distances RGBA, so we flip the [2] and [0] index
 		unsigned char *pixelBuffer = m_dest.GetPixelBuffer();
 		for_each(angleRanges.begin(), angleRanges.end(), [&pixelBuffer] (const TAngleRange& range) {
-				pixelBuffer[0] = 64;
-				pixelBuffer[1] = 128;
-				pixelBuffer[2] = 192;
-				pixelBuffer[3] = 255;
+				pixelBuffer[2] = range.size() > 1 ? range[1] : 255;
+				pixelBuffer[1] = range.size() > 2 ? range[2] : pixelBuffer[2];
+				pixelBuffer[0] = range.size() > 3 ? range[3] : pixelBuffer[1];
+				pixelBuffer[3] = range.size() > 4 ? range[4] : pixelBuffer[0];
 				pixelBuffer += 4;
 			}
-		);		
-
-		// TODO: TEMP
-        //memset(m_dest.GetPixelBuffer(), 128, m_dest.GetPixelBufferSize());
+		);
 
         // return success
         return true;

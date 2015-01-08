@@ -1,6 +1,7 @@
 #include "platform.h"
 #include "CImageData.h"
 #include "Encoder.h"
+#include "Decoder.h"
 #include <stdio.h>
 
 void main (int argc, char **argv)
@@ -15,9 +16,11 @@ void main (int argc, char **argv)
     
         CImageDataBlackWhite sourceImageData;
         if (!Platform::LoadImageFile(L"../Assets/female_256.png", sourceImageData))
+		{
             Platform::ReportError("Could not load source image!");
-        else
-            Platform::ReportError("source image loaded");
+			break;
+		}
+        Platform::ReportError("source image loaded");
 
 		// TODO: make it spit out the b&w source, the intermediate, and the encoded.
 		// TODO: keep command line param for it to spit out b&w translated source!
@@ -28,16 +31,37 @@ void main (int argc, char **argv)
         
         // encode the image
         if (!Encode(sourceImageData, encodedImageData))
+		{
             Platform::ReportError("Could not encode image!");
-        else
-            Platform::ReportError("Image encoded");
+			break;
+		}
+        Platform::ReportError("Image encoded");
 
-
-        if (!Platform::SaveImageFile(L"blah.png",encodedImageData))
+		// save the encoded image
+        if (!Platform::SaveImageFile(L"encoded.png",encodedImageData))
+		{
             Platform::ReportError("Could not save encoded image!");
-        else
-            Platform::ReportError("encoded image saved");
+			break;
+		}
+        Platform::ReportError("encoded image saved");
 
+		// decode the image
+        CImageDataRGBA decodedImageData;
+        decodedImageData.AllocatePixels(256,256);
+		if (!Decode(encodedImageData, decodedImageData))
+		{
+			Platform::ReportError("Could not decode image!");
+			break;
+		}
+		Platform::ReportError("Image decoded");
+
+		// save the decoded image
+        if (!Platform::SaveImageFile(L"decoded.png",decodedImageData))
+		{
+            Platform::ReportError("Could not save encoded image!");
+			break;
+		}
+        Platform::ReportError("encoded image saved");
     }
     while (0);
 
