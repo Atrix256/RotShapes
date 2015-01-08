@@ -11,6 +11,7 @@ var g_mouseDown = false;
 var g_brushSize = 6;
 
 var g_AAmount = 0.01;
+var g_debugColorDecode = false;
 var g_bilinearFilter = false;
 var g_squaredDistance = false;
 var g_useHypotneuse = true;
@@ -707,34 +708,70 @@ function RedrawResult ()
 			if (!g_squaredDistance)
 				distSq = Math.sqrt(distSq);
 
-			// figure out whether we are inside the shape or not
-			var fillValue = 0;
-			if (distSq < encodedDistSq[0])
+			resultData.data[((resultWidth*y)+x)*4+3] = 255;
+			if (g_debugColorDecode == true)
 			{
-				fillValue = 0;
-			}
-			else if (distSq < encodedDistSq[1])
-			{
-				fillValue = CalcFillValue(distSq, encodedDistSq[0], encodedDistSq[1]);
-			}
-			else if (distSq < encodedDistSq[2])
-			{
-				fillValue = 0;
-			}
-			else if (distSq < encodedDistSq[3])
-			{
-				fillValue = CalcFillValue(distSq, encodedDistSq[2], encodedDistSq[3]);
+				if (distSq < encodedDistSq[0])
+				{
+					resultData.data[((resultWidth*y)+x)*4+0] = 0;
+					resultData.data[((resultWidth*y)+x)*4+1] = 0;
+					resultData.data[((resultWidth*y)+x)*4+2] = 0;	
+				}
+				else if (distSq < encodedDistSq[1])
+				{
+					resultData.data[((resultWidth*y)+x)*4+0] = 255;
+					resultData.data[((resultWidth*y)+x)*4+1] = 0;
+					resultData.data[((resultWidth*y)+x)*4+2] = 0;					
+				}
+				else if (distSq < encodedDistSq[2])
+				{
+					resultData.data[((resultWidth*y)+x)*4+0] = 0;
+					resultData.data[((resultWidth*y)+x)*4+1] = 255;
+					resultData.data[((resultWidth*y)+x)*4+2] = 0;					
+				}
+				else if (distSq < encodedDistSq[3])
+				{
+					resultData.data[((resultWidth*y)+x)*4+0] = 0;
+					resultData.data[((resultWidth*y)+x)*4+1] = 0;
+					resultData.data[((resultWidth*y)+x)*4+2] = 255;					
+				}
+				else
+				{
+					resultData.data[((resultWidth*y)+x)*4+0] = 255;
+					resultData.data[((resultWidth*y)+x)*4+1] = 255;
+					resultData.data[((resultWidth*y)+x)*4+2] = 255;					
+				}
 			}
 			else
 			{
-				fillValue = 0;
-			}
+				// figure out whether we are inside the shape or not
+				var fillValue = 0;
+				if (distSq < encodedDistSq[0])
+				{
+					fillValue = 0;
+				}
+				else if (distSq < encodedDistSq[1])
+				{
+					fillValue = CalcFillValue(distSq, encodedDistSq[0], encodedDistSq[1]);
+				}
+				else if (distSq < encodedDistSq[2])
+				{
+					fillValue = 0;
+				}
+				else if (distSq < encodedDistSq[3])
+				{
+					fillValue = CalcFillValue(distSq, encodedDistSq[2], encodedDistSq[3]);
+				}
+				else
+				{
+					fillValue = 0;
+				}
 
-			// write to the pixel: R,G,B,A
-			resultData.data[((resultWidth*y)+x)*4+0] = fillValue*255;
-			resultData.data[((resultWidth*y)+x)*4+1] = fillValue*255;
-			resultData.data[((resultWidth*y)+x)*4+2] = fillValue*255;			
-			resultData.data[((resultWidth*y)+x)*4+3] = 255;
+				// write to the pixel: R,G,B,A
+				resultData.data[((resultWidth*y)+x)*4+0] = fillValue*255;
+				resultData.data[((resultWidth*y)+x)*4+1] = fillValue*255;
+				resultData.data[((resultWidth*y)+x)*4+2] = fillValue*255;			
+			}
 		}
 	}
 
@@ -781,6 +818,7 @@ function RedrawAll (immediate)
 	document.getElementById('AADist').value = SanitizeInput(document.getElementById('AADist').value, 0);	
 
 	g_AAmount = document.getElementById('AADist').value / g_resultPanel.elem.width;
+	g_debugColorDecode = document.getElementById('DebugColorDecode').checked;
 	g_bilinearFilter = document.getElementById('BilinearFilter').checked;
 	g_squaredDistance = document.getElementById('SquaredDistance').checked;
 	g_useHypotneuse = document.getElementById('Hypotneuse').checked;
@@ -836,7 +874,8 @@ Load Image:
 <br/>
 Result:<input type="text" id="ResultWidth" value="256" style="width:4em" onChange="ResizeCanvases()"/>x<input type="text" id="ResultHeight" value="256" style="width:4em" onChange="ResizeCanvases()"/><br>
 Bilinear Filter Encoded Data: <input type=checkbox id="BilinearFilter" onChange="RedrawAll(true);"/><br>
-AA Distance: <input type="text" id="AADist" value="0" style="width:4em" onChange="RedrawAll(true);"/> (Smoothsteps this many pixels.  0 to turn off AA)
+AA Distance: <input type="text" id="AADist" value="0" style="width:4em" onChange="RedrawAll(true);"/> (Smoothsteps this many pixels.  0 to turn off AA)<br>
+Debug Color Decoded Data: <input type=checkbox id="DebugColorDecode" onChange="RedrawAll(true);"/>
 <div id="ResultSize"></div>
 </div>
 

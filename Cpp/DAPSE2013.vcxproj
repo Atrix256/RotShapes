@@ -77,12 +77,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Src\CImageData.cpp" />
+    <ClCompile Include="Src\Decoder.cpp" />
     <ClCompile Include="Src\Encoder.cpp" />
     <ClCompile Include="Src\main.cpp" />
     <ClCompile Include="Src\platform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\CImageData.h" />
+    <ClInclude Include="Src\Decoder.h" />
     <ClInclude Include="Src\Encoder.h" />
     <ClInclude Include="Src\platform.h" />
   </ItemGroup>

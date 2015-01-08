@@ -6,6 +6,7 @@
 
 #include <memory.h>
 #include <assert.h>
+#include <array>
 
 template <unsigned int CHANNELS, unsigned int BITSPERCHANNEL>
 class CImageData
@@ -85,5 +86,17 @@ private:
 class CImageDataRGBA: public CImageData<4,8>
 {
 public:
+	void GetPixel(size_t x, size_t y, std::array<unsigned char, 4>& pixel) const
+	{
+		auto a = c_pixelBits;
+		assert(x < GetWidth());
+		assert(y < GetHeight());
+		static_assert(c_pixelBits % 8 == 0, __FUNCTION__" made a bad assumption that BPP was evenly divisibly by 8!");
+		unsigned char *pixelPointer = GetPixelBuffer() + y * GetStride() + x*(c_pixelBits/8);
+		pixel[0] = pixelPointer[0];
+		pixel[1] = pixelPointer[1];
+		pixel[2] = pixelPointer[2];
+		pixel[3] = pixelPointer[3];
+	}
 private:
 };

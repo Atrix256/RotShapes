@@ -90,7 +90,7 @@ public:
 			atomic<size_t> nextAngle(static_cast<size_t>(-1));
 			for_each(threads.begin(), threads.end(), [&](thread& t)
 				{
-				t = thread([&]() { CalcAngleRangesMT(radialPixels, angleRanges, nextAngle); });
+					t = thread([&]() { CalcAngleRangesMT(radialPixels, angleRanges, nextAngle); });
 				}
 			);
 			for_each(threads.begin(), threads.end(), [](thread& t) { t.join(); });
