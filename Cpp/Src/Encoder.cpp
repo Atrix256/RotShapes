@@ -50,7 +50,7 @@ public:
 		, c_centerY((float)src.GetHeight() / 2.0f)
 		, c_maxX(src.GetWidth()-1.0f)
 		, c_maxY(src.GetHeight()-1.0f)
-		, c_hypotneuse(sqrtf((float)src.GetWidth()*(float)src.GetWidth()+(float)src.GetHeight()*(float)src.GetHeight()))
+		, c_hypotneuse(sqrtf(c_centerX*c_centerX+c_centerY*c_centerY))
 		, c_arcSizeRadians(((float)M_PI*2.0f)/((float)c_angleCount))
 		, c_halfArcSizeRadians(((float)M_PI)/((float)c_angleCount))
     {
@@ -99,12 +99,13 @@ public:
 		// image format is BGRA (defined in Platform::SaveImageFile() by necesity), but we want to encode
 		// distances RGBA, so we flip the [2] and [0] index
 		unsigned char *pixelBuffer = m_dest.GetPixelBuffer();
-		for_each(angleRanges.begin(), angleRanges.end(), [&pixelBuffer] (const TAngleRange& range) {
+		size_t stride = m_dest.GetStride();
+		for_each(angleRanges.begin(), angleRanges.end(), [&pixelBuffer,stride] (const TAngleRange& range) {
 				pixelBuffer[2] = range.size() > 1 ? range[1] : 255;
 				pixelBuffer[1] = range.size() > 2 ? range[2] : pixelBuffer[2];
 				pixelBuffer[0] = range.size() > 3 ? range[3] : pixelBuffer[1];
 				pixelBuffer[3] = range.size() > 4 ? range[4] : pixelBuffer[0];
-				pixelBuffer += 4;
+				pixelBuffer += stride;
 			}
 		);
 
