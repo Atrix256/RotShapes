@@ -52,7 +52,7 @@ namespace Platform
     }
 
     //--------------------------------------------------------------------------------------------------------------
-    bool LoadImageFile (const wchar_t* fileName, CImageDataBlackWhite& imageData)
+    bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData)
     {
         // taken from http://msdn.microsoft.com/en-us/library/ee719794(v=vs.85).aspx
         // and http://msdn.microsoft.com/en-us/library/windows/desktop/ee719661%28v=vs.85%29.aspx
@@ -62,6 +62,7 @@ namespace Platform
         IWICBitmapFrameDecode* frame = NULL;
         IWICBitmap* bitmap = NULL;
         IWICBitmapSource * convertedBitmap = NULL;
+		IWICBitmapSource * convertedBitmap2 = NULL;
         unsigned char* pixels = NULL;
 
         do {
@@ -135,15 +136,20 @@ namespace Platform
                 break;
             }
 
-            UINT stride = width / 8;
-            if (width % 8)
-                stride++;
-        
+            // convert back to 32 bit color
+            hr = WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, convertedBitmap, &convertedBitmap2);
+            if (!SUCCEEDED(hr) || !convertedBitmap2)
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image from black and white");
+                ret = false;
+                break;
+            }
+
+            UINT stride = width*4;
             UINT bufferSize = stride*height;
             pixels = new unsigned char[bufferSize];
-
             WICRect rc = {0, 0, width, height};
-            hr = convertedBitmap->CopyPixels(&rc,stride,bufferSize,pixels);
+            hr = convertedBitmap2->CopyPixels(&rc,stride,bufferSize,pixels);
             if (!SUCCEEDED(hr))
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not copy pixel data");
@@ -158,6 +164,9 @@ namespace Platform
         while(0);
 
         // free the frame and decoder etc
+        if (convertedBitmap2)
+            convertedBitmap2->Release();
+
         if (convertedBitmap)
             convertedBitmap->Release();
 

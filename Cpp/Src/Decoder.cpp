@@ -74,9 +74,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest)
 				pixel[0] = 255;
 			}
 
-			// TODO: the decoded image is screwed up for some reason, need to investigate why! could try loading it in a web
-			// decoder and seeing if it decodes bad there too (if so, the encoded image is wrong, else the cpp decopder is wrong!)
-			// could also be that something is sampling pixels incorrectly maybe...
+			// TODO: decoded image isn't bad, but it looks different when running in debug vs release. investigate!
 			pixel += 4;
 		}
 		pixels+=stride;

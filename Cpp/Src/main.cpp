@@ -19,7 +19,7 @@ void main (int argc, char **argv)
         if (!Platform::Init())
             break;
     
-        CImageDataBlackWhite sourceImageData;
+        CImageDataRGBA sourceImageData;
         if (!Platform::LoadImageFile(L"../Assets/female_256.png", sourceImageData))
 		{
             Platform::ReportError("Could not load source image!");

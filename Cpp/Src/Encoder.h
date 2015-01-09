@@ -1,8 +1,7 @@
 //--------------------------------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------------------------------
-class CImageDataBlackWhite;
 class CImageDataRGBA;
 
 //--------------------------------------------------------------------------------------------------------------
-bool Encode (const CImageDataBlackWhite& src, CImageDataRGBA& dest);
+bool Encode (const CImageDataRGBA& src, CImageDataRGBA& dest);

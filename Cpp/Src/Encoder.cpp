@@ -41,7 +41,7 @@ struct SThreadData
 class CEncodedPixelData
 {
 public:
-    CEncodedPixelData (const CImageDataBlackWhite& src, CImageDataRGBA& dest)
+    CEncodedPixelData (const CImageDataRGBA& src, CImageDataRGBA& dest)
         : m_src(src)
         , m_dest(dest)
 		, c_radialPixelCount(dest.GetHeight() << 8)
@@ -76,9 +76,9 @@ public:
 		// Calculate our radial pixels using as many threads as we have cores for and wait for them to finish
 		{
 			atomic<size_t> nextPixel(static_cast<size_t>(-1));
-			for_each(threads.begin(), threads.end(), [&] (thread& t)
+			for_each(threads.begin(), threads.end(), [&,this] (thread& t)
 				{
-					t = thread([&] () { CalcRadialPixelsMT(radialPixels, nextPixel); });
+					t = thread([&,this] () { CalcRadialPixelsMT(radialPixels, nextPixel); });
 				}
 			);
 			for_each(threads.begin(), threads.end(), [] (thread& t) { t.join(); });
@@ -88,9 +88,9 @@ public:
 		// each angle, so that we can encode those distances as R,G,B,A
 		{
 			atomic<size_t> nextAngle(static_cast<size_t>(-1));
-			for_each(threads.begin(), threads.end(), [&](thread& t)
+			for_each(threads.begin(), threads.end(), [&] (thread& t)
 				{
-					t = thread([&]() { CalcAngleRangesMT(radialPixels, angleRanges, nextAngle); });
+					t = thread([&] () { CalcAngleRangesMT(radialPixels, angleRanges, nextAngle); });
 				}
 			);
 			for_each(threads.begin(), threads.end(), [](thread& t) { t.join(); });
@@ -243,6 +243,7 @@ private:
 		int ex = (int)maxX;
 		int ey = (int)maxY;
 		float triangleTotal = 0.0f;
+		std::array<unsigned char, 4> pixelData;
 		for (int iy = sy; iy <= ey; ++iy)
 		{
 			for (int ix = sx; ix <= ex; ++ix)
@@ -309,7 +310,8 @@ private:
 				}
 
 				// black pixels subtract from the total, white pixels add into the total
-				float multiplier = m_src.GetPixel(ix, iy) ? 1.0f : -1.0f;
+				m_src.GetPixel(ix, iy,pixelData);
+				float multiplier =  pixelData[0] > 0 ? 1.0f : -1.0f;
 
 				// add area of polygon into triangleTotal, using ear clipping.  The polygon is garaunteed convex since it's
 				// a triangle clipped to a square.  Also garaunteed to be in clockwise order.
@@ -423,8 +425,8 @@ private:
 	}
 
 private:
-    const CImageDataBlackWhite& m_src;
-    CImageDataRGBA&             m_dest;
+    const CImageDataRGBA&	m_src;
+    CImageDataRGBA&			m_dest;
 
 	// some constants sharable across threads
 	const size_t c_radialPixelCount;
@@ -441,7 +443,7 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------------------------
-bool Encode (const CImageDataBlackWhite& src, CImageDataRGBA& dest)
+bool Encode (const CImageDataRGBA& src, CImageDataRGBA& dest)
 {
     // create an encoder and encode our image
     CEncodedPixelData encoder(src, dest);
