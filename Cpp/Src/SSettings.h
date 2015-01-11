@@ -18,7 +18,6 @@ struct SDecodingSettings
 		:  m_width(256)
 		, m_height(256)
 		, m_bilinearFilter(false)
-		, m_debugColors(false)
 	{ }
 
 	std::wstring	m_srcFile;
@@ -26,7 +25,7 @@ struct SDecodingSettings
 	size_t			m_width;
 	size_t			m_height;
 	bool			m_bilinearFilter;
-	bool			m_debugColors;
+	std::wstring	m_debugColorsFile;
 };
 
 struct SSettings

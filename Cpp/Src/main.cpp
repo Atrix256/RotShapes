@@ -52,7 +52,13 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 		}
 		else if (!_wcsicmp(argv[index], L"-debugcolors"))
 		{
-			settings.m_decoding.m_debugColors = true;
+			++index;
+			if (index >= argc)
+			{
+				Platform::ReportError("no file specified for debug colors decoded image");
+				return false;
+			}
+			settings.m_decoding.m_debugColorsFile = argv[index];
 			++index;
 		}
 		else if (!_wcsicmp(argv[index], L"-decode"))
@@ -97,22 +103,23 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 void PrintUsage()
 {
 	Platform::ReportError("Usage:");
-	Platform::ReportError("\t-encode <source> <destination> <angles>");
-	Platform::ReportError("\t\tencode the <source> file with <angles> angles and save it as <destination>.");
-	Platform::ReportError("\t-decode <source> <destination> <width> <height>");
-	Platform::ReportError("\t\tdecode the <source> file into an image that is <width> x <height> in resolution and saves it as <destination>.");
+	Platform::ReportError("  -encode <source> <destination> <angles>");
+	Platform::ReportError("    encode the <source> file with <angles> angles and save it as <destination>.");
+	Platform::ReportError("  -decode <source> <destination> <width> <height>");
+	Platform::ReportError("    decode the <source> file into an image that is <width> x <height> in\n    resolution and saves it as <destination>.");
 	Platform::ReportError("Encoding Options:");
-	Platform::ReportError("\t-bw <filename>");
-	Platform::ReportError("\t\tSave the source image converted to black & white to <filename>.");
+	Platform::ReportError("  -bw <filename>");
+	Platform::ReportError("    Save the source image converted to black & white to <filename>.");
 	Platform::ReportError("Decoding Options:");
-	Platform::ReportError("\t-debugcolors");
-	Platform::ReportError("\t\tShow the encoded regions as black, red, green, blue, white.");
-	Platform::ReportError("\t-bilinear");
-	Platform::ReportError("\t\tUse bilinear filtering for decoding image.");
+	Platform::ReportError("  -debugcolors <filename>");
+	Platform::ReportError("    decode the encoded regions as black, red, green, blue, white and save it as\n    <filename>.");
+	Platform::ReportError("  -bilinear");
+	Platform::ReportError("    Use bilinear filtering when decoding image.");
 }
 
 int wmain (int argc, wchar_t **argv)
 {
+	// TODO: make it so we can use all the threads again
 	// TODO: force the encoded image (and other images?) to always be png extension and type somehow?
 	// TODO: option for hypotneuse vs not?
 	// TODO: option for squared distance vs not.
@@ -120,6 +127,18 @@ int wmain (int argc, wchar_t **argv)
 	// TODO: look through all files for todos
 	// TODO: make a verb to combine encoded images (for animations / sprite sheets)
 	// TODO: for decoding, let them specify frame number of source image?
+	// TODO: option for a single 32 bit distance for encoding & decoding!
+	// TODO: option for smoothstep?
+	// TODO: distance seems to round up from left corner.  should round based on center i think
+	// TODO: make asserts happen in release too!
+	/* TODO:
+	* maybe have a thing when bilinear filtering that throws out info when distances are too far.
+	 * maybe try some kind of custom filtering to ditch that data
+	 * maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
+
+	* maybe try one of the averages (like, geometric, or something)
+	*/
+	// TODO: make a thing where if there is only one argument, if the image has width > 1, it does encoding, else it does decoding? for easy drag / drop usage?
 
 	// show usage if we aren't given enough command line options
 	if (argc <= 1)
@@ -205,7 +224,7 @@ int wmain (int argc, wchar_t **argv)
 			// decode the image
 			CImageDataRGBA decodedImageData;
 			decodedImageData.AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
-			if (!Decode(sourceImageData, decodedImageData, settings.m_decoding.m_debugColors, settings.m_decoding.m_bilinearFilter))
+			if (!Decode(sourceImageData, decodedImageData, false, settings.m_decoding.m_bilinearFilter))
 			{
 				Platform::ReportError("Could not decode image!");
 				break;
@@ -219,6 +238,26 @@ int wmain (int argc, wchar_t **argv)
 				break;
 			}
 			Platform::ReportError("encoded image saved: %ls", settings.m_decoding.m_destFile.c_str());
+
+			// do a debug color decoding if we should
+			if (settings.m_decoding.m_debugColorsFile.length() > 0)
+			{
+				// decode the image
+				if (!Decode(sourceImageData, decodedImageData, true, settings.m_decoding.m_bilinearFilter))
+				{
+					Platform::ReportError("Could not decode image for debug colors!");
+					break;
+				}
+				Platform::ReportError("Image decoded for debug colors");
+
+				// save the decoded image
+				if (!Platform::SaveImageFile(settings.m_decoding.m_debugColorsFile.c_str(), decodedImageData))
+				{
+					Platform::ReportError("Could not save encoded image: %ls", settings.m_decoding.m_debugColorsFile.c_str());
+					break;
+				}
+				Platform::ReportError("encoded image saved: %ls", settings.m_decoding.m_debugColorsFile.c_str());
+			}
 		}
     }
     while (0);

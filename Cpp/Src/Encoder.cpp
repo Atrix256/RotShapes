@@ -1,5 +1,6 @@
 #include "Encoder.h"
 #include "CImageData.h"
+#include "Platform.h"
 #include <vector>
 #include <array>
 #include <atomic>
@@ -44,6 +45,8 @@ public:
     CEncodedPixelData (const CImageDataRGBA& src, CImageDataRGBA& dest)
         : m_src(src)
         , m_dest(dest)
+		, m_nextPixel(static_cast<size_t>(-1))
+		, m_nextAngle(static_cast<size_t>(-1))
 		, c_radialPixelCount(dest.GetHeight() << 8)
 		, c_angleCount(dest.GetHeight())
 		, c_centerX((float)src.GetWidth() / 2.0f)
@@ -53,6 +56,8 @@ public:
 		, c_hypotneuse(sqrtf(c_centerX*c_centerX+c_centerY*c_centerY))
 		, c_arcSizeRadians(((float)M_PI*2.0f)/((float)c_angleCount))
 		, c_halfArcSizeRadians(((float)M_PI)/((float)c_angleCount))
+		, m_radialPixels(c_radialPixelCount)
+		, m_angleRanges(c_angleCount)
     {
         assert(dest.GetWidth() == 1);
     }
@@ -64,44 +69,31 @@ public:
 	//----------------------------------------------------------------------------------------------------------
     bool Encode ()
 	{
-		// TODO: figure out why having multiple threads in release makes the encoding come out differently (and wrong!)
-		// make a thread slot for each core we have available, making sure to at least have 1 thread
-		auto numThreads = 1;//thread::hardware_concurrency();
-		numThreads = max(numThreads, static_cast<decltype(numThreads)>(1));
+		// TODO: figure out why the multiple threads is having issues
+		// make a thread slot for each core we have available, making sure to at least have 1 thread.
+		// also create a threaddata object per thread
+		auto numThreads = thread::hardware_concurrency();
+		numThreads = 1;//max(numThreads, static_cast<decltype(numThreads)>(1));
 		vector<thread> threads(numThreads);
-
-		// make some storage for our radial pixels and angle ranges
-		TRadialPixels radialPixels(c_radialPixelCount);
-		TAngleRanges angleRanges(c_angleCount);
+		m_threadData.resize(numThreads);
+		Platform::ReportError("Encoding with %i threads", numThreads);		
 
 		// Calculate our radial pixels using as many threads as we have cores for and wait for them to finish
-		{
-			atomic<size_t> nextPixel(static_cast<size_t>(-1));
-			for_each(threads.begin(), threads.end(), [&,this] (thread& t)
-				{
-					t = thread([&,this] () { CalcRadialPixelsMT(radialPixels, nextPixel); });
-				}
-			);
-			for_each(threads.begin(), threads.end(), [] (thread& t) { t.join(); });
-		}
+		for (size_t i = 0, c = threads.size(); i < c; ++i)
+			threads[i] = thread([this,i] () { CalcRadialPixelsMT(m_threadData[i]); });
+		for_each(threads.begin(), threads.end(), [] (thread& t) { t.join(); });
 
 		// we now have the color of each radial pixel, we need to use those to make black/white distances for
 		// each angle, so that we can encode those distances as R,G,B,A
-		{
-			atomic<size_t> nextAngle(static_cast<size_t>(-1));
-			for_each(threads.begin(), threads.end(), [&] (thread& t)
-				{
-					t = thread([&] () { CalcAngleRangesMT(radialPixels, angleRanges, nextAngle); });
-				}
-			);
-			for_each(threads.begin(), threads.end(), [](thread& t) { t.join(); });
-		}
+		for (size_t i = 0, c = threads.size(); i < c; ++i)
+			threads[i] = thread([this] () { CalcAngleRangesMT(); });
+		for_each(threads.begin(), threads.end(), [] (thread& t) { t.join(); });
 
 		// image format is BGRA (defined in Platform::SaveImageFile() by necesity), but we want to encode
 		// distances RGBA, so we flip the [2] and [0] index
 		unsigned char *pixelBuffer = m_dest.GetPixelBuffer();
 		size_t stride = m_dest.GetStride();
-		for_each(angleRanges.begin(), angleRanges.end(), [&pixelBuffer,stride] (const TAngleRange& range) {
+		for_each(m_angleRanges.begin(), m_angleRanges.end(), [&pixelBuffer,stride] (const TAngleRange& range) {
 				pixelBuffer[2] = range.size() > 1 ? range[1] : 255;
 				pixelBuffer[1] = range.size() > 2 ? range[2] : 255;
 				pixelBuffer[0] = range.size() > 3 ? range[3] : 255;
@@ -117,7 +109,7 @@ public:
 private:
 
 	//----------------------------------------------------------------------------------------------------------
-	void RemoveShortestRange (TAngleRange& range)
+	static void RemoveShortestRange (TAngleRange& range)
 	{
 		// find the shortest boundary that isn't the first black to white, or the last white to black
 		size_t shortestLengthIndex = -1;
@@ -140,14 +132,14 @@ private:
 	}
 
 	//----------------------------------------------------------------------------------------------------------
-	void CalcAngleRangesMT (const TRadialPixels &pixels, TAngleRanges &angles, atomic<size_t> &nextAngle)
+	void CalcAngleRangesMT ()
 	{
 		// grab angles until we are out of range
-		auto angle = ++nextAngle;
+		auto angle = ++m_nextAngle;
 		while (angle < c_angleCount)
 		{
 			// get our angle range
-			TAngleRange &range = angles[angle];
+			TAngleRange &range = m_angleRanges[angle];
 			
 			// start with an explicit black value at the start
 			range.clear();
@@ -158,7 +150,7 @@ private:
 			size_t base = angle << 8;
 			for (size_t dist = 0; dist < 256; ++dist)
 			{
-				if (pixels[base + dist] != white)
+				if (m_radialPixels[base + dist] != white)
 				{
 					range.push_back(dist);
 					white = !white;
@@ -174,13 +166,13 @@ private:
 				RemoveShortestRange(range);
 
 			// go to the next pixel
-			angle = ++nextAngle;
+			angle = ++m_nextAngle;
 		}
 	}
 
 	//----------------------------------------------------------------------------------------------------------
 	template <typename TestValidFN, typename IntersectPointFN>
-	void ClipPolygonByPlane (SThreadData& threadData, TestValidFN TestValid, IntersectPointFN IntersectPoint) const
+	static void ClipPolygonByPlane (SThreadData& threadData, TestValidFN TestValid, IntersectPointFN IntersectPoint)
 	{
 		// if no points (due to previous culling), nothing to do here!
 		if (threadData.m_polygon.size() == 0)
@@ -224,7 +216,7 @@ private:
 	}
 
 	//----------------------------------------------------------------------------------------------------------
-	float CalcTriangleOverlapMT (SThreadData& threadData, float AX, float AY, float BX, float BY, float CX, float CY) const
+	float CalcTriangleOverlapMT (SThreadData& threadData, float AX, float AY, float BX, float BY, float CX, float CY)
 	{
 		// get our bounding box to be able to know which pixels we need to test this triangle against
 		float minX = floor(min(AX,min(BX,CX)));
@@ -250,10 +242,20 @@ private:
 			for (int ix = sx; ix <= ex; ++ix)
 			{
 				// make the source polygon
+				//SThreadData threadData;
+				threadData.m_polygonTemp.clear();
 				threadData.m_polygon.clear();
 				threadData.m_polygon.push_back(SVector2(AX,AY));
 				threadData.m_polygon.push_back(SVector2(BX,BY));
 				threadData.m_polygon.push_back(SVector2(CX,CY));
+				if (threadData.m_polygon.size() != 3)
+				{
+					((int*)0)[0]=0;
+				}
+				if (threadData.m_polygonTemp.size() != 0)
+				{
+					((int*)0)[0]=0;
+				}
 
 				// clip polygon by minx
 				ClipPolygonByPlane(
@@ -334,7 +336,7 @@ private:
 	}
 
 	//----------------------------------------------------------------------------------------------------------
-	float CalcAnnulusOverlapMT (SThreadData& threadData, float distMin, float distMax, float angleMin, float angleMax) const
+	float CalcAnnulusOverlapMT (SThreadData& threadData, float distMin, float distMax, float angleMin, float angleMax)
 	{
 		// Given an annulus arc, this returns a value representing the count of white pixels minus
 		// the total of black pixels, where each pixel is multiplied by it's area of overlap.
@@ -398,13 +400,10 @@ private:
 	}
 
 	//----------------------------------------------------------------------------------------------------------
-	void CalcRadialPixelsMT (TRadialPixels& pixels, atomic<size_t>& nextPixel) const
+	void CalcRadialPixelsMT (SThreadData& threadData)
 	{
-		// make our per thread data object
-		SThreadData threadData;
-
 		// grab pixels until we are out of range
-		auto pixel = ++nextPixel;
+		auto pixel = ++m_nextPixel;
 		while (pixel < c_radialPixelCount)
 		{
 			// calculate the distance range
@@ -418,16 +417,19 @@ private:
 			float angleMax = ((float)pixelAngle) * c_arcSizeRadians + c_halfArcSizeRadians;
 
 			// generate the pixel
-			pixels[pixel] = CalcAnnulusOverlapMT(threadData, distMin, distMax, angleMin, angleMax) > 0.0f;
+			m_radialPixels[pixel] = CalcAnnulusOverlapMT(threadData, distMin, distMax, angleMin, angleMax) > 0.0f;
 
 			// go to the next pixel
-			pixel = ++nextPixel;
+			pixel = ++m_nextPixel;
 		}
 	}
 
 private:
     const CImageDataRGBA&	m_src;
     CImageDataRGBA&			m_dest;
+
+	atomic<size_t> m_nextPixel;
+	atomic<size_t> m_nextAngle;
 
 	// some constants sharable across threads
 	const size_t c_radialPixelCount;
@@ -441,6 +443,11 @@ private:
 
 	const float c_arcSizeRadians;
 	const float c_halfArcSizeRadians;
+
+	// members that rely on constantsat initialization
+	TRadialPixels				m_radialPixels;
+	TAngleRanges				m_angleRanges;
+	std::vector<SThreadData>	m_threadData;
 };
 
 //--------------------------------------------------------------------------------------------------------------
