@@ -1,3 +1,24 @@
+encoding problems:
+ * with missing ranges you can set it to the last channel value or 0 (or maybe other options)
+ * i think the issue is that different things are better for different situations (for bilinear filtering)
+  * setting to 0 (or lastchannel / 2) helps the case where there is data.
+  * setting to last channel value helps the case where there is not?
+
+* maybe have a thing when bilinear filtering that throws out info when distances are too far.
+ * maybe try some kind of custom filtering to ditch that data
+ * maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
+
+* maybe try one of the averages (like, geometric, or something)
+
+CPP: option for 1 uint32 distance
+
+CPP: smoothstep AA option
+
+CPP: bilinear filtered image has problems at angle 0 and some other places.
+
+CPP: distance seems to round up from left corner.  should round based on center i think
+CPP: try smoothing distances?
+
 WEB: with debug colors it looks like there are very tiny regions of color. probably due to how the conversion process happens (it isnt very good on the web)
 WEB: also shows some hints to what's going wrong with bilinear sampling.
 

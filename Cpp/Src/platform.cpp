@@ -52,7 +52,7 @@ namespace Platform
     }
 
     //--------------------------------------------------------------------------------------------------------------
-    bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData)
+    bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData, bool convertToBlackWhite)
     {
         // taken from http://msdn.microsoft.com/en-us/library/ee719794(v=vs.85).aspx
         // and http://msdn.microsoft.com/en-us/library/windows/desktop/ee719661%28v=vs.85%29.aspx
@@ -127,29 +127,36 @@ namespace Platform
                 break;
             }
 
-            // convert to black and white 1 bit per pixel
-            hr = WICConvertBitmapSource(GUID_WICPixelFormatBlackWhite, bitmap, &convertedBitmap);
-            if (!SUCCEEDED(hr) || !convertedBitmap)
-            {
-                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image to black and white");
-                ret = false;
-                break;
-            }
+			// if we need black and white, make it so
+			if (convertToBlackWhite)
+			{
+				// convert to black and white 1 bit per pixel
+				hr = WICConvertBitmapSource(GUID_WICPixelFormatBlackWhite, bitmap, &convertedBitmap);
+				if (!SUCCEEDED(hr) || !convertedBitmap)
+				{
+					ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image to black and white");
+					ret = false;
+					break;
+				}
 
-            // convert back to 32 bit color
-            hr = WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, convertedBitmap, &convertedBitmap2);
-            if (!SUCCEEDED(hr) || !convertedBitmap2)
-            {
-                ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image from black and white");
-                ret = false;
-                break;
-            }
+				// convert back to 32 bit color
+				hr = WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, convertedBitmap, &convertedBitmap2);
+				if (!SUCCEEDED(hr) || !convertedBitmap2)
+				{
+					ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image from black and white");
+					ret = false;
+					break;
+				}
+			}
 
             UINT stride = width*4;
             UINT bufferSize = stride*height;
             pixels = new unsigned char[bufferSize];
             WICRect rc = {0, 0, width, height};
-            hr = convertedBitmap2->CopyPixels(&rc,stride,bufferSize,pixels);
+			if (convertToBlackWhite)
+				hr = convertedBitmap2->CopyPixels(&rc,stride,bufferSize,pixels);
+			else
+				hr = bitmap->CopyPixels(&rc,stride,bufferSize,pixels);
             if (!SUCCEEDED(hr))
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not copy pixel data");

@@ -4,4 +4,4 @@
 class CImageDataRGBA;
 
 //--------------------------------------------------------------------------------------------------------------
-bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest);
+bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, bool bilinearFilter);

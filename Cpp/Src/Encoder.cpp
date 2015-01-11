@@ -64,8 +64,9 @@ public:
 	//----------------------------------------------------------------------------------------------------------
     bool Encode ()
 	{
+		// TODO: figure out why having multiple threads in release makes the encoding come out differently (and wrong!)
 		// make a thread slot for each core we have available, making sure to at least have 1 thread
-		auto numThreads = thread::hardware_concurrency();
+		auto numThreads = 1;//thread::hardware_concurrency();
 		numThreads = max(numThreads, static_cast<decltype(numThreads)>(1));
 		vector<thread> threads(numThreads);
 
@@ -102,9 +103,9 @@ public:
 		size_t stride = m_dest.GetStride();
 		for_each(angleRanges.begin(), angleRanges.end(), [&pixelBuffer,stride] (const TAngleRange& range) {
 				pixelBuffer[2] = range.size() > 1 ? range[1] : 255;
-				pixelBuffer[1] = range.size() > 2 ? range[2] : pixelBuffer[2];
-				pixelBuffer[0] = range.size() > 3 ? range[3] : pixelBuffer[1];
-				pixelBuffer[3] = range.size() > 4 ? range[4] : pixelBuffer[0];
+				pixelBuffer[1] = range.size() > 2 ? range[2] : 255;
+				pixelBuffer[0] = range.size() > 3 ? range[3] : 255;
+				pixelBuffer[3] = range.size() > 4 ? range[4] : 255;
 				pixelBuffer += stride;
 			}
 		);
