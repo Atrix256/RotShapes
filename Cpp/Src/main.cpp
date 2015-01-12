@@ -10,18 +10,7 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 	int index = 1;
 	while (index < argc)
 	{
-		if (!_wcsicmp(argv[index], L"-bw"))
-		{
-			++index;
-			if (index >= argc)
-			{
-				Platform::ReportError("no file specified for black/white converted source image");
-				return false;
-			}
-			settings.m_encoding.m_convertedFile = argv[index];
-			++index;
-		}
-		else if (!_wcsicmp(argv[index], L"-encode"))
+		if (!_wcsicmp(argv[index], L"-encode"))
 		{
 			++index;
 			if (index >= argc)
@@ -45,22 +34,6 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			}
 			++index;
 		}
-		else if (!_wcsicmp(argv[index], L"-bilinear"))
-		{
-			settings.m_decoding.m_bilinearFilter = true;
-			++index;
-		}
-		else if (!_wcsicmp(argv[index], L"-debugcolors"))
-		{
-			++index;
-			if (index >= argc)
-			{
-				Platform::ReportError("no file specified for debug colors decoded image");
-				return false;
-			}
-			settings.m_decoding.m_debugColorsFile = argv[index];
-			++index;
-		}
 		else if (!_wcsicmp(argv[index], L"-decode"))
 		{
 			++index;
@@ -78,17 +51,49 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			}
 			settings.m_decoding.m_destFile = argv[index];
 			++index;
-			if (index >= argc || swscanf_s(argv[index],L"%u",&settings.m_decoding.m_width) !=1)
+			if (index >= argc || swscanf_s(argv[index], L"%u", &settings.m_decoding.m_width) != 1)
 			{
 				Platform::ReportError("no width given for decoding");
 				return false;
 			}
 			++index;
-			if (index >= argc || swscanf_s(argv[index],L"%u",&settings.m_decoding.m_height) !=1)
+			if (index >= argc || swscanf_s(argv[index], L"%u", &settings.m_decoding.m_height) != 1)
 			{
 				Platform::ReportError("no height given for decoding");
 				return false;
 			}
+			++index;
+		}
+		else if (!_wcsicmp(argv[index], L"-bw"))
+		{
+			++index;
+			if (index >= argc)
+			{
+				Platform::ReportError("no file specified for black/white converted source image");
+				return false;
+			}
+			settings.m_encoding.m_convertedFile = argv[index];
+			++index;
+		}
+		else if (!_wcsicmp(argv[index], L"-bilinear"))
+		{
+			settings.m_decoding.m_textureFilter = ETextureFilter::e_filterBilinear;
+			++index;
+		}
+		else if (!_wcsicmp(argv[index], L"-smartfilter"))
+		{
+			settings.m_decoding.m_textureFilter = ETextureFilter::e_filterSmart;
+			++index;
+		}
+		else if (!_wcsicmp(argv[index], L"-debugcolors"))
+		{
+			++index;
+			if (index >= argc)
+			{
+				Platform::ReportError("no file specified for debug colors decoded image");
+				return false;
+			}
+			settings.m_decoding.m_debugColorsFile = argv[index];
 			++index;
 		}
 		else
@@ -115,18 +120,23 @@ void PrintUsage()
 	Platform::ReportError("    decode the encoded regions as black, red, green, blue, white and save it as\n    <filename>.");
 	Platform::ReportError("  -bilinear");
 	Platform::ReportError("    Use bilinear filtering when decoding image.");
+	Platform::ReportError("  -smartfilter");
+	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.");
 }
 
 int wmain (int argc, wchar_t **argv)
 {
+	// TODO: feature to visualize the angles and distances better somehow.  could help explain why the decoding does what it does sometimes (esp for smart filtering mode)
+	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 	// TODO: make it so we can use all the threads again
+	// TODO: implement e_filterSmart
 	// TODO: force the encoded image (and other images?) to always be png extension and type somehow?
 	// TODO: option for hypotneuse vs not?
 	// TODO: option for squared distance vs not.
 	// TODO: other features like layering and animation for decoding?
 	// TODO: look through all files for todos
-	// TODO: make a verb to combine encoded images (for animations / sprite sheets)
-	// TODO: for decoding, let them specify frame number of source image?
+	// TODO: make a verb to combine encoded images (for animations / sprite sheets). maybe one to split them apart too.
+	// TODO: for decoding, let them specify frame number of source image as a float (used as X texture coordinate)
 	// TODO: option for a single 32 bit distance for encoding & decoding!
 	// TODO: option for smoothstep?
 	// TODO: distance seems to round up from left corner.  should round based on center i think
@@ -224,7 +234,7 @@ int wmain (int argc, wchar_t **argv)
 			// decode the image
 			CImageDataRGBA decodedImageData;
 			decodedImageData.AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
-			if (!Decode(sourceImageData, decodedImageData, false, settings.m_decoding.m_bilinearFilter))
+			if (!Decode(sourceImageData, decodedImageData, false, settings.m_decoding.m_textureFilter))
 			{
 				Platform::ReportError("Could not decode image!");
 				break;
@@ -234,16 +244,16 @@ int wmain (int argc, wchar_t **argv)
 			// save the decoded image
 			if (!Platform::SaveImageFile(settings.m_decoding.m_destFile.c_str(), decodedImageData))
 			{
-				Platform::ReportError("Could not save encoded image: %ls", settings.m_decoding.m_destFile.c_str());
+				Platform::ReportError("Could not save decoded image: %ls", settings.m_decoding.m_destFile.c_str());
 				break;
 			}
-			Platform::ReportError("encoded image saved: %ls", settings.m_decoding.m_destFile.c_str());
+			Platform::ReportError("decoded image saved: %ls", settings.m_decoding.m_destFile.c_str());
 
 			// do a debug color decoding if we should
 			if (settings.m_decoding.m_debugColorsFile.length() > 0)
 			{
 				// decode the image
-				if (!Decode(sourceImageData, decodedImageData, true, settings.m_decoding.m_bilinearFilter))
+				if (!Decode(sourceImageData, decodedImageData, true, settings.m_decoding.m_textureFilter))
 				{
 					Platform::ReportError("Could not decode image for debug colors!");
 					break;
@@ -253,10 +263,10 @@ int wmain (int argc, wchar_t **argv)
 				// save the decoded image
 				if (!Platform::SaveImageFile(settings.m_decoding.m_debugColorsFile.c_str(), decodedImageData))
 				{
-					Platform::ReportError("Could not save encoded image: %ls", settings.m_decoding.m_debugColorsFile.c_str());
+					Platform::ReportError("Could not save debug colors decoded image: %ls", settings.m_decoding.m_debugColorsFile.c_str());
 					break;
 				}
-				Platform::ReportError("encoded image saved: %ls", settings.m_decoding.m_debugColorsFile.c_str());
+				Platform::ReportError("debug colors decoded image saved: %ls", settings.m_decoding.m_debugColorsFile.c_str());
 			}
 		}
     }

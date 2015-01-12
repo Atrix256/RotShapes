@@ -1,0 +1,7 @@
+Some example command lines
+
+encode and decode:
+-encode ../Assets/batman_256.png encoded.png 256 -bw bw.png -decode encoded.png decoded.png 1024 1024 -debugcolors decodeddc.png -smartfilter
+
+just decode:
+-decode encoded.png decoded.png 1024 1024 -debugcolors decodeddc.png -smartfilter

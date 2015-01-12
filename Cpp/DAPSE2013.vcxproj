@@ -87,6 +87,7 @@
     <ClInclude Include="Src\Decoder.h" />
     <ClInclude Include="Src\Encoder.h" />
     <ClInclude Include="Src\platform.h" />
+    <ClInclude Include="Src\SSettings.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

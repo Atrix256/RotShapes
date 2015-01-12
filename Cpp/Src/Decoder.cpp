@@ -1,11 +1,12 @@
 #include "Decoder.h"
 #include "CImageData.h"
+#include "SSettings.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 
 //--------------------------------------------------------------------------------------------------------------
-bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, bool bilinearFilter)
+bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, ETextureFilter textureFilter)
 {
 	size_t width = dest.GetWidth();
 	size_t height = dest.GetHeight();
@@ -15,7 +16,6 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 	const float centerY = (float)height / 2.0f;
 	const float hypotneuse = sqrtf(centerX*centerX + centerY*centerY);
 
-	std::array<unsigned char, 4> srcPixelTemp;
 	std::array<float, 4> srcPixel;
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
@@ -31,9 +31,6 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			if (angle < 0.0f)
 				angle += 1.0f;
 			angle *= src.GetHeight();
-			// add half a pixel to the y axis to do proper rounding when not in bilinear mode
-			if (!bilinearFilter)
-				angle += 0.5f;
 
 			// calculate the distance in a range from 0 to 255 since that is how the distance is encoded
 			float distNorm = (sqrt(x*x + y*y) / hypotneuse);
@@ -41,15 +38,25 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			float dist = distNorm*255.0f;
 
 			// get the source (encoded) pixel
-			if (bilinearFilter)
-				src.GetPixelBilinear(0.0f, angle, srcPixel);
-			else
+			switch (textureFilter)
 			{
-				src.GetPixel(0, (size_t)angle, srcPixelTemp);
-				srcPixel[0] = (float)srcPixelTemp[0];
-				srcPixel[1] = (float)srcPixelTemp[1];
-				srcPixel[2] = (float)srcPixelTemp[2];
-				srcPixel[3] = (float)srcPixelTemp[3];
+				case ETextureFilter::e_filterNone:
+				{
+					// add half a pixel to do proper rounding when in no filtering mode
+					src.GetPixel(0, (size_t)(angle+0.5f), srcPixel);
+					break;
+				}
+				case ETextureFilter::e_filterBilinear:
+				{
+					src.GetPixelBilinear(0.0f, angle, srcPixel);
+					break;
+				}
+				case ETextureFilter::e_filterSmart:
+				{
+					src.GetPixelSmart(0.0f, angle, srcPixel);
+					break;
+				}
+				default:assert(false);
 			}
 
 			// image format is BGRA (defined in Platform::SaveImageFile() by necesity), but we want to encode

@@ -108,6 +108,9 @@ Later...
 
 * try w/ color (animated?) source images converted into multiple layers
 
+* if there are a lot of angles compared to the decoded image resolution, we need a way to smooth the input more.
+ * could do mipmaps, but how will that deal with "smart filtering"? maybe need custom mipmap generating code?
+
 =====NOTES=====
 
 * why does bilinear texture sampling have such problems with artifacts?

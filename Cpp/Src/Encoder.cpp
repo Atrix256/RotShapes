@@ -236,7 +236,7 @@ private:
 		int ex = (int)maxX;
 		int ey = (int)maxY;
 		float triangleTotal = 0.0f;
-		std::array<unsigned char, 4> pixelData;
+		std::array<float, 4> pixelData;
 		for (int iy = sy; iy <= ey; ++iy)
 		{
 			for (int ix = sx; ix <= ex; ++ix)
@@ -313,7 +313,7 @@ private:
 				}
 
 				// black pixels subtract from the total, white pixels add into the total
-				m_src.GetPixel(ix, iy,pixelData);
+				m_src.GetPixel(ix, iy, pixelData);
 				float multiplier =  pixelData[0] > 0 ? 1.0f : -1.0f;
 
 				// add area of polygon into triangleTotal, using ear clipping.  The polygon is garaunteed convex since it's
