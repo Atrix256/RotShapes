@@ -85,6 +85,16 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			settings.m_decoding.m_textureFilter = ETextureFilter::e_filterSmart;
 			++index;
 		}
+		else if (!_wcsicmp(argv[index], L"-shortdist"))
+		{
+			settings.m_shortDist = true;
+			++index;
+		}
+		else if (!_wcsicmp(argv[index], L"-sqdist"))
+		{
+			settings.m_sqDist = true;
+			++index;
+		}
 		else if (!_wcsicmp(argv[index], L"-debugcolors"))
 		{
 			++index;
@@ -107,32 +117,39 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 
 void PrintUsage()
 {
-	Platform::ReportError("Usage:");
+	Platform::ReportError("Dual Annulus Polar Shape Encoder/Decoder.");
+	Platform::ReportError("Written by Alan Wolfe daspe@demofox.org");
+	Platform::ReportError("\nUsage:");
 	Platform::ReportError("  -encode <source> <destination> <angles>");
 	Platform::ReportError("    encode the <source> file with <angles> angles and save it as <destination>.");
 	Platform::ReportError("  -decode <source> <destination> <width> <height>");
 	Platform::ReportError("    decode the <source> file into an image that is <width> x <height> in\n    resolution and saves it as <destination>.");
-	Platform::ReportError("Encoding Options:");
+	Platform::ReportError("\nEncoding Options:");
 	Platform::ReportError("  -bw <filename>");
 	Platform::ReportError("    Save the source image converted to black & white to <filename>.");
-	Platform::ReportError("Decoding Options:");
+	Platform::ReportError("\nDecoding Options:");
 	Platform::ReportError("  -debugcolors <filename>");
 	Platform::ReportError("    decode the encoded regions as black, red, green, blue, white and save it as\n    <filename>.");
 	Platform::ReportError("  -bilinear");
 	Platform::ReportError("    Use bilinear filtering when decoding image.");
 	Platform::ReportError("  -smartfilter");
 	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.");
+	Platform::ReportError("\nFormat Options:");
+	Platform::ReportError("  -shortdist");
+	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.");
+	Platform::ReportError("  -sqdist");
+	Platform::ReportError("    Store squared distance instead of regular distance.\n");
 }
 
 int wmain (int argc, wchar_t **argv)
 {
+	// TODO: combine bilinear and smartfilter into one option: -filter smart/bilinear
+	// TODO: combine -shortdist and -sqdist into one option: -dist short/sq. make an enum to back it then too!
 	// TODO: feature to visualize the angles and distances better somehow.  could help explain why the decoding does what it does sometimes (esp for smart filtering mode)
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
+	// TODO: print out encoding and decoding options?
 	// TODO: make it so we can use all the threads again
-	// TODO: implement e_filterSmart
 	// TODO: force the encoded image (and other images?) to always be png extension and type somehow?
-	// TODO: option for hypotneuse vs not?
-	// TODO: option for squared distance vs not.
 	// TODO: other features like layering and animation for decoding?
 	// TODO: look through all files for todos
 	// TODO: make a verb to combine encoded images (for animations / sprite sheets). maybe one to split them apart too.
@@ -141,6 +158,7 @@ int wmain (int argc, wchar_t **argv)
 	// TODO: option for smoothstep?
 	// TODO: distance seems to round up from left corner.  should round based on center i think
 	// TODO: make asserts happen in release too!
+	// TODO: test rectangular images
 	/* TODO:
 	* maybe have a thing when bilinear filtering that throws out info when distances are too far.
 	 * maybe try some kind of custom filtering to ditch that data
@@ -203,7 +221,7 @@ int wmain (int argc, wchar_t **argv)
 			encodedImageData.AllocatePixels(1,settings.m_encoding.m_angles);
 
 			// encode the image
-			if (!Encode(sourceImageData, encodedImageData))
+			if (!Encode(sourceImageData, encodedImageData, settings))
 			{
 				Platform::ReportError("Could not encode image!");
 				break;
@@ -234,7 +252,7 @@ int wmain (int argc, wchar_t **argv)
 			// decode the image
 			CImageDataRGBA decodedImageData;
 			decodedImageData.AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
-			if (!Decode(sourceImageData, decodedImageData, false, settings.m_decoding.m_textureFilter))
+			if (!Decode(sourceImageData, decodedImageData, false, settings))
 			{
 				Platform::ReportError("Could not decode image!");
 				break;
@@ -253,7 +271,7 @@ int wmain (int argc, wchar_t **argv)
 			if (settings.m_decoding.m_debugColorsFile.length() > 0)
 			{
 				// decode the image
-				if (!Decode(sourceImageData, decodedImageData, true, settings.m_decoding.m_textureFilter))
+				if (!Decode(sourceImageData, decodedImageData, true, settings))
 				{
 					Platform::ReportError("Could not decode image for debug colors!");
 					break;

@@ -1,5 +1,7 @@
 #include <string>
 
+using namespace std;
+
 enum class ETextureFilter
 {
 	e_filterNone,
@@ -13,30 +15,38 @@ struct SEncodingSettings
 		: m_angles(256)
 	{ }
 
-	std::wstring	m_srcFile;
-	std::wstring	m_destFile;
-	size_t			m_angles;
-	std::wstring	m_convertedFile;
+	wstring	m_srcFile;
+	wstring	m_destFile;
+	size_t	m_angles;
+	wstring	m_convertedFile;
 };
 
 struct SDecodingSettings
 {
 	SDecodingSettings()
-		:  m_width(256)
+		: m_width(256)
 		, m_height(256)
 		, m_textureFilter(ETextureFilter::e_filterNone)
 	{ }
 
-	std::wstring	m_srcFile;
-	std::wstring	m_destFile;
+	wstring			m_srcFile;
+	wstring			m_destFile;
 	size_t			m_width;
 	size_t			m_height;
 	ETextureFilter	m_textureFilter;
-	std::wstring	m_debugColorsFile;
+	wstring			m_debugColorsFile;
 };
 
 struct SSettings
 {
-	SEncodingSettings m_encoding;
-	SDecodingSettings m_decoding;
+	SSettings()
+		: m_shortDist(false)
+		, m_sqDist(false)
+	{ }
+
+	SEncodingSettings	m_encoding;
+	SDecodingSettings	m_decoding;
+
+	bool				m_shortDist;
+	bool				m_sqDist;
 };

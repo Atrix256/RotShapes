@@ -5,8 +5,10 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+using namespace std;
+
 //--------------------------------------------------------------------------------------------------------------
-bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, ETextureFilter textureFilter)
+bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
 {
 	size_t width = dest.GetWidth();
 	size_t height = dest.GetHeight();
@@ -14,9 +16,11 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 
 	const float centerX = (float)width / 2.0f;
 	const float centerY = (float)height / 2.0f;
-	const float hypotneuse = sqrtf(centerX*centerX + centerY*centerY);
+	const float maxDist = settings.m_shortDist
+		? (float)max(width, height)
+		: sqrtf(centerX*centerX + centerY*centerY);
 
-	std::array<float, 4> srcPixel;
+	array<float, 4> srcPixel;
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
 	{
@@ -33,16 +37,20 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			angle *= src.GetHeight();
 
 			// calculate the distance in a range from 0 to 255 since that is how the distance is encoded
-			float distNorm = (sqrt(x*x + y*y) / hypotneuse);
-			assert(distNorm >= 0.0f && distNorm <= 1.0f);
+			float distNorm = (sqrt(x*x + y*y) / maxDist);
+			if (settings.m_sqDist)
+				distNorm *= distNorm;
+
+			if (distNorm >= 1.0f)
+				distNorm = 1.0f;
 			float dist = distNorm*255.0f;
 
 			// get the source (encoded) pixel
-			switch (textureFilter)
+			switch (settings.m_decoding.m_textureFilter)
 			{
 				case ETextureFilter::e_filterNone:
 				{
-					// add half a pixel to do proper rounding when in no filtering mode
+					// add half a pixel to do proper rounding when not using filtering
 					src.GetPixel(0, (size_t)(angle+0.5f), srcPixel);
 					break;
 				}

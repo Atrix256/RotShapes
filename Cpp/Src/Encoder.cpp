@@ -1,6 +1,7 @@
 #include "Encoder.h"
 #include "CImageData.h"
 #include "Platform.h"
+#include "SSettings.h"
 #include <vector>
 #include <array>
 #include <atomic>
@@ -42,7 +43,7 @@ struct SThreadData
 class CEncodedPixelData
 {
 public:
-    CEncodedPixelData (const CImageDataRGBA& src, CImageDataRGBA& dest)
+    CEncodedPixelData (const CImageDataRGBA& src, CImageDataRGBA& dest, const SSettings& settings)
         : m_src(src)
         , m_dest(dest)
 		, m_nextPixel(static_cast<size_t>(-1))
@@ -53,11 +54,12 @@ public:
 		, c_centerY((float)src.GetHeight() / 2.0f)
 		, c_maxX(src.GetWidth()-1.0f)
 		, c_maxY(src.GetHeight()-1.0f)
-		, c_hypotneuse(sqrtf(c_centerX*c_centerX+c_centerY*c_centerY))
+		, c_maxDist(settings.m_shortDist ? (float)max(src.GetWidth(),src.GetHeight()) : sqrtf(c_centerX*c_centerX+c_centerY*c_centerY))
 		, c_arcSizeRadians(((float)M_PI*2.0f)/((float)c_angleCount))
 		, c_halfArcSizeRadians(((float)M_PI)/((float)c_angleCount))
 		, m_radialPixels(c_radialPixelCount)
 		, m_angleRanges(c_angleCount)
+		, m_settings(settings)
     {
         assert(dest.GetWidth() == 1);
     }
@@ -93,11 +95,25 @@ public:
 		// distances RGBA, so we flip the [2] and [0] index
 		unsigned char *pixelBuffer = m_dest.GetPixelBuffer();
 		size_t stride = m_dest.GetStride();
-		for_each(m_angleRanges.begin(), m_angleRanges.end(), [&pixelBuffer,stride] (const TAngleRange& range) {
+		for_each(m_angleRanges.begin(), m_angleRanges.end(), [&pixelBuffer,stride,this] (const TAngleRange& range) {
 				pixelBuffer[2] = range.size() > 1 ? range[1] : 255;
 				pixelBuffer[1] = range.size() > 2 ? range[2] : 255;
 				pixelBuffer[0] = range.size() > 3 ? range[3] : 255;
 				pixelBuffer[3] = range.size() > 4 ? range[4] : 255;
+
+				// if we are supposed to encode squared distances, then square it
+				if (m_settings.m_sqDist)
+				{
+					float dist = (float)pixelBuffer[0] / 255.0f;
+					pixelBuffer[0] = (unsigned char)(dist*dist*255.0f);
+					dist = (float)pixelBuffer[1] / 255.0f;
+					pixelBuffer[1] = (unsigned char)(dist*dist*255.0f);
+					dist = (float)pixelBuffer[2] / 255.0f;
+					pixelBuffer[2] = (unsigned char)(dist*dist*255.0f);
+					dist = (float)pixelBuffer[3] / 255.0f;
+					pixelBuffer[3] = (unsigned char)(dist*dist*255.0f);
+				}
+
 				pixelBuffer += stride;
 			}
 		);
@@ -236,7 +252,7 @@ private:
 		int ex = (int)maxX;
 		int ey = (int)maxY;
 		float triangleTotal = 0.0f;
-		std::array<float, 4> pixelData;
+		array<float, 4> pixelData;
 		for (int iy = sy; iy <= ey; ++iy)
 		{
 			for (int ix = sx; ix <= ex; ++ix)
@@ -408,8 +424,8 @@ private:
 		{
 			// calculate the distance range
 			auto pixelDistance = pixel & 0xFF;
-			float distMin = c_hypotneuse * ((float)pixelDistance) / 256.0f;
-			float distMax = c_hypotneuse * ((float)pixelDistance+1) / 256.0f;
+			float distMin = c_maxDist * ((float)pixelDistance) / 256.0f;
+			float distMax = c_maxDist * ((float)pixelDistance + 1) / 256.0f;
 
 			// calculate the angle range
 			auto pixelAngle = pixel >> 8;
@@ -427,6 +443,7 @@ private:
 private:
     const CImageDataRGBA&	m_src;
     CImageDataRGBA&			m_dest;
+	const SSettings&		m_settings;
 
 	atomic<size_t> m_nextPixel;
 	atomic<size_t> m_nextAngle;
@@ -439,21 +456,21 @@ private:
 	const float c_centerY;
 	const float c_maxX;
 	const float c_maxY;
-	const float c_hypotneuse;
+	const float c_maxDist;
 
 	const float c_arcSizeRadians;
 	const float c_halfArcSizeRadians;
 
-	// members that rely on constantsat initialization
-	TRadialPixels				m_radialPixels;
-	TAngleRanges				m_angleRanges;
-	std::vector<SThreadData>	m_threadData;
+	// members that rely on constant initialization
+	TRadialPixels		m_radialPixels;
+	TAngleRanges		m_angleRanges;
+	vector<SThreadData>	m_threadData;
 };
 
 //--------------------------------------------------------------------------------------------------------------
-bool Encode (const CImageDataRGBA& src, CImageDataRGBA& dest)
+bool Encode (const CImageDataRGBA& src, CImageDataRGBA& dest,const SSettings& settings)
 {
     // create an encoder and encode our image
-    CEncodedPixelData encoder(src, dest);
+    CEncodedPixelData encoder(src, dest, settings);
     return encoder.Encode();
 }

@@ -2,6 +2,7 @@
 // Forward declarations
 //--------------------------------------------------------------------------------------------------------------
 class CImageDataRGBA;
+struct SSettings;
 
 //--------------------------------------------------------------------------------------------------------------
-bool Encode (const CImageDataRGBA& src, CImageDataRGBA& dest);
+bool Encode (const CImageDataRGBA& src, CImageDataRGBA& dest, const SSettings& settings);

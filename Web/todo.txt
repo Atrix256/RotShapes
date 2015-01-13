@@ -1,3 +1,4 @@
+WEB: shortdist seems like a lie... why does web chop off corners but cpp doesn't?
 WEB: with debug colors it looks like there are very tiny regions of color. probably due to how the conversion process happens (it isnt very good on the web)
 WEB: also shows some hints to what's going wrong with bilinear sampling.
 web: can we not block the main thread?
