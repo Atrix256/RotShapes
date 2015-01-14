@@ -17,7 +17,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 	const float centerX = (float)width / 2.0f;
 	const float centerY = (float)height / 2.0f;
 	const float maxDist = settings.m_shortDist
-		? (float)max(width, height)
+		? (float)max(width, height)/2.0f
 		: sqrtf(centerX*centerX + centerY*centerY);
 
 	array<float, 4> srcPixel;

@@ -54,7 +54,7 @@ public:
 		, c_centerY((float)src.GetHeight() / 2.0f)
 		, c_maxX(src.GetWidth()-1.0f)
 		, c_maxY(src.GetHeight()-1.0f)
-		, c_maxDist(settings.m_shortDist ? (float)max(src.GetWidth(),src.GetHeight()) : sqrtf(c_centerX*c_centerX+c_centerY*c_centerY))
+		, c_maxDist(settings.m_shortDist ? (float)max(src.GetWidth(),src.GetHeight())/2.0f : sqrtf(c_centerX*c_centerX+c_centerY*c_centerY))
 		, c_arcSizeRadians(((float)M_PI*2.0f)/((float)c_angleCount))
 		, c_halfArcSizeRadians(((float)M_PI)/((float)c_angleCount))
 		, m_radialPixels(c_radialPixelCount)

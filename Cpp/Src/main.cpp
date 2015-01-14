@@ -144,7 +144,7 @@ void PrintUsage()
 int wmain (int argc, wchar_t **argv)
 {
 	// TODO: combine bilinear and smartfilter into one option: -filter smart/bilinear
-	// TODO: combine -shortdist and -sqdist into one option: -dist short/sq. make an enum to back it then too!
+	// TODO: combine -shortdist and -sqdist into one option: -dist short/sq. make an enum to back it then too! well, maybe not since they can both be turned on!
 	// TODO: feature to visualize the angles and distances better somehow.  could help explain why the decoding does what it does sometimes (esp for smart filtering mode)
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 	// TODO: print out encoding and decoding options?
