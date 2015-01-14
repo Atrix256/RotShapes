@@ -41,8 +41,12 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			if (settings.m_sqDist)
 				distNorm *= distNorm;
 
+			bool distTooFar = false;
 			if (distNorm >= 1.0f)
+			{
+				distTooFar = true;
 				distNorm = 1.0f;
+			}
 			float dist = distNorm*255.0f;
 
 			// get the source (encoded) pixel
@@ -145,6 +149,29 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 					pixel[0] = 0;
 				}
 			}
+
+			// if we are supposed to show the radial pixel boundaries
+			if (settings.m_decoding.m_showRadialPixels && !distTooFar)
+			{
+				// todo: need to draw the lines and circles (bresenham) instead of doing it this way.
+
+				float angleFract = (angle+0.5f) - floor(angle+0.5f);
+				if (angleFract < 0.1f)
+				{
+					pixel[2] = 255;
+					pixel[1] = 255;
+					pixel[0] = 0;
+				}
+
+				float distFract = dist - floor(dist);
+				if (distFract < 0.25f)
+				{
+					pixel[2] = 255;
+					pixel[1] = 255;
+					pixel[0] = 0;
+				}
+			}
+
 			pixel += 4;
 		}
 		pixels+=stride;

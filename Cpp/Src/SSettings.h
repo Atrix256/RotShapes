@@ -27,6 +27,7 @@ struct SDecodingSettings
 		: m_width(256)
 		, m_height(256)
 		, m_textureFilter(ETextureFilter::e_filterNone)
+		, m_showRadialPixels(false)
 	{ }
 
 	wstring			m_srcFile;
@@ -35,6 +36,7 @@ struct SDecodingSettings
 	size_t			m_height;
 	ETextureFilter	m_textureFilter;
 	wstring			m_debugColorsFile;
+	bool			m_showRadialPixels;
 };
 
 struct SSettings

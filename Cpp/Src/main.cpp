@@ -95,6 +95,11 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			settings.m_sqDist = true;
 			++index;
 		}
+		else if (!_wcsicmp(argv[index], L"-showradialpixels"))
+		{
+			settings.m_decoding.m_showRadialPixels = true;
+			++index;
+		}
 		else if (!_wcsicmp(argv[index], L"-debugcolors"))
 		{
 			++index;
@@ -134,6 +139,8 @@ void PrintUsage()
 	Platform::ReportError("    Use bilinear filtering when decoding image.");
 	Platform::ReportError("  -smartfilter");
 	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.");
+	Platform::ReportError("  -showradialpixels");
+	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.");
 	Platform::ReportError("\nFormat Options:");
 	Platform::ReportError("  -shortdist");
 	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.");
@@ -143,11 +150,10 @@ void PrintUsage()
 
 int wmain (int argc, wchar_t **argv)
 {
-	// TODO: combine bilinear and smartfilter into one option: -filter smart/bilinear
-	// TODO: combine -shortdist and -sqdist into one option: -dist short/sq. make an enum to back it then too! well, maybe not since they can both be turned on!
-	// TODO: feature to visualize the angles and distances better somehow.  could help explain why the decoding does what it does sometimes (esp for smart filtering mode)
+	// TODO: showradialpixels should draw lines and circles (bressenham) after the fact, not do distance tests!
+	// TODO: maybe an option for showradialpixels to only show the distances, or only the angles, or both
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
-	// TODO: print out encoding and decoding options?
+	// TODO: print out encoding and decoding options while we do the work
 	// TODO: make it so we can use all the threads again
 	// TODO: force the encoded image (and other images?) to always be png extension and type somehow?
 	// TODO: other features like layering and animation for decoding?
@@ -158,7 +164,7 @@ int wmain (int argc, wchar_t **argv)
 	// TODO: option for smoothstep?
 	// TODO: distance seems to round up from left corner.  should round based on center i think
 	// TODO: make asserts happen in release too!
-	// TODO: test rectangular images
+	// TODO: test non square images
 	/* TODO:
 	* maybe have a thing when bilinear filtering that throws out info when distances are too far.
 	 * maybe try some kind of custom filtering to ditch that data
@@ -166,6 +172,7 @@ int wmain (int argc, wchar_t **argv)
 
 	* maybe try one of the averages (like, geometric, or something)
 	*/
+	// TODO: combine bilinear and smartfilter into one option: -filter smart/bilinear. wait on this til animation is working
 	// TODO: make a thing where if there is only one argument, if the image has width > 1, it does encoding, else it does decoding? for easy drag / drop usage?
 
 	// show usage if we aren't given enough command line options
