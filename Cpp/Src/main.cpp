@@ -151,7 +151,9 @@ void PrintUsage()
 int wmain (int argc, wchar_t **argv)
 {
 	// TODO: showradialpixels should draw lines and circles (bressenham) after the fact, not do distance tests!
+	// TODO: blog post showing bressenham line and circle code w/ links to the wikipedia articles
 	// TODO: maybe an option for showradialpixels to only show the distances, or only the angles, or both
+	// TODO: maybe all color should be uint32? or make drawpixel do it in unsigned char [4], but keep it consistent
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 	// TODO: print out encoding and decoding options while we do the work
 	// TODO: make it so we can use all the threads again

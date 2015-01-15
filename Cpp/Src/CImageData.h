@@ -5,14 +5,11 @@
 
 using namespace std;
 
-//template <unsigned int CHANNELS, unsigned int BITSPERCHANNEL>
 class CImageDataRGBA
 {
 public:
     CImageDataRGBA () : m_pixels(0), m_width(0), m_height(0), m_stride(0) { }
     ~CImageDataRGBA() { Clear(); }
-
-    //static const unsigned int c_pixelBits = CHANNELS * BITSPERCHANNEL;
 
     void Clear ()
     {
@@ -157,6 +154,59 @@ public:
 		pixel[1] = left[1] * fractXOpp + right[1] * fractX;
 		pixel[2] = left[2] * fractXOpp + right[2] * fractX;
 		pixel[3] = left[3] * fractXOpp + right[3] * fractX;
+	}
+
+	void DrawPixel (int x, int y, unsigned int color)
+	{
+		// TODO: put this up by getpixel if it's staying around. maybe don't do texture wrap?
+		// mod x,y by width, height to do wrap texture mode
+		unsigned int *pixelPointer = (unsigned int*)(GetPixelBuffer() + (y%GetHeight()) * GetStride() + (x%GetWidth())*4);
+		pixelPointer[0] = color;
+	}
+
+	void DrawLine (int x1, int y1, int x2, int y2, unsigned int color)
+	{
+		// TODO: other octants, bounds checking, pixel pointer more friendly pixel writes.
+		static_assert(sizeof(color) == 4, "wrongly assuming sizeof(unsigned int) is 32 bits!");
+
+		int dx = x2 - x1;
+		int dy = y2 - y1;
+
+		int D = 2*dy-dx;
+		int y = y1;
+		
+		DrawPixel(x1, y1, color);
+		for (int x = x1+1; x < x2; ++x)
+		{
+			if (D > 0)
+			{
+				y = y+1;
+				D += (2*dy-2*dx);
+			}
+			else
+			{
+				D += 2*dy;
+			}
+			DrawPixel(x,y,color);
+		}
+
+		/*
+		plotLine(x0,y0, x1,y1)
+		  dx=x1-x0
+		  dy=y1-y0
+
+		  D = 2*dy - dx
+		  plot(x0,y0)
+		  y=y0
+
+		  for x from x0+1 to x1
+			if D > 0
+			  y = y+1
+			  plot(x,y)
+			  D = D + (2*dy-2*dx)
+			else
+			  plot(x,y)
+			  D = D + (2*dy)*/
 	}
 
 private:

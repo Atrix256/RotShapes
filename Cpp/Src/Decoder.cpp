@@ -151,6 +151,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			}
 
 			// if we are supposed to show the radial pixel boundaries
+			/*
 			if (settings.m_decoding.m_showRadialPixels && !distTooFar)
 			{
 				// todo: need to draw the lines and circles (bresenham) instead of doing it this way.
@@ -171,10 +172,16 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 					pixel[0] = 0;
 				}
 			}
+			*/
 
 			pixel += 4;
 		}
 		pixels+=stride;
+	}
+
+	if (settings.m_decoding.m_showRadialPixels)
+	{
+		dest.DrawLine(128, 128, 500, 190, 0x80808080);
 	}
 
     return true;
