@@ -168,30 +168,91 @@ public:
 	// TODO: keep a clear (plot(x,y)) version, and a fast version (const dx_two = dx*2 etc)
 	// static_assert(sizeof(color) == 4, "wrongly assuming sizeof(unsigned int) is 32 bits!");
 
-	void DrawLine (unsigned int* pixels, int width, int height, int x1, int y1, int x2, int y2, unsigned int color)
+
+	// Generic X Major Axis Line Drawing.
+	// Template parameter to help make the error > 0 case faster
+	template <int MINOR_AXIS_MOVEMENT>
+	void DrawLineXMajorAxis(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
 	{
-		const int dx = x2 - x1;
-		const int dy = y2 - y1;
 		const int dx2 = dx * 2;
 		const int dy2 = dy * 2;
 		const int dy2Mindx2 = dy2 - dx2;
 
 		int Error = dy2 - dx;
 
-		unsigned int* pixel = &pixels[y1*height+x1];
-		pixel[0] = color;
-		for (int x = x2 - x1 - 1; x > 0; --x)
+		*pixel = color;
+		for (int x = dx - 1; x > 0; --x)
 		{
+			// move on major axis and minor axis
 			if (Error > 0)
 			{
-				pixel += width;
+				pixel += (MINOR_AXIS_MOVEMENT*pixelStride) + 1;
 				Error += dy2Mindx2;
 			}
+			// move on major axis only
 			else
 			{
+				pixel += 1;
 				Error += dy2;
 			}
-			(++pixel)[0] = color;
+			*pixel = color;
+		}
+	}
+
+	// Specialized X Major Axis Line Drawing, optimized for horizontal lines
+	template <>
+	void DrawLineXMajorAxis<0>(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
+	{
+		// In assembly we could do this more efficiently by repeatedly writing color across memory.
+		// Memset won't work here because that only repeats a single byte value, not a 4 byte value.
+		*pixel = color;
+		while (dx)
+		{
+			*(++pixel) = color;
+			--dx;
+		};
+	}
+
+	// Draw an arbitrary line.  Assumes start and end point are within valid range
+	void DrawLine(unsigned int* pixels, int pixelStride, int x1, int y1, int x2, int y2, unsigned int color)
+	{
+		int dx = x2 - x1;
+		int dy = y2 - y1;
+
+		if (abs(dx) >= abs(dy))
+		{
+			if (dx < 0)
+			{
+				dx *= -1;
+				dy *= -1;
+				swap(x1, x2);
+				swap(y1, y2);
+			}
+
+			unsigned int* startPixel = &pixels[y1 * pixelStride + x1];
+
+			if (dy < 0)
+				DrawLineXMajorAxis<-1>(startPixel, pixelStride, dx, dy, color);
+
+			/*
+			if (dy > 0)
+				DrawLineXMajorAxis<1>(startPixel, pixelStride, dx, dy, color);
+			else if (dy < 0)
+				DrawLineXMajorAxis<-1>(startPixel, pixelStride, dx, dy, color);
+			else
+				DrawLineXMajorAxis<0>(startPixel, pixelStride, dx, dy, color);*/
+		}
+		else
+		{
+			if (dy < 0)
+			{
+				dx *= -1;
+				dy *= -1;
+				swap(x1, x2);
+				swap(y1, y2);
+			}
+
+			//DrawLineYMajorAxis(startPixel, pixelStride, dx, dy, color);
 		}
 	}
 
