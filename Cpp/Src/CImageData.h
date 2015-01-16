@@ -164,49 +164,35 @@ public:
 		pixelPointer[0] = color;
 	}
 
-	void DrawLine (int x1, int y1, int x2, int y2, unsigned int color)
+	// TODO: other octants, bounds checking, pixel pointer more friendly pixel writes.
+	// TODO: keep a clear (plot(x,y)) version, and a fast version (const dx_two = dx*2 etc)
+	// static_assert(sizeof(color) == 4, "wrongly assuming sizeof(unsigned int) is 32 bits!");
+
+	void DrawLine (unsigned int* pixels, int width, int height, int x1, int y1, int x2, int y2, unsigned int color)
 	{
-		// TODO: other octants, bounds checking, pixel pointer more friendly pixel writes.
-		static_assert(sizeof(color) == 4, "wrongly assuming sizeof(unsigned int) is 32 bits!");
+		const int dx = x2 - x1;
+		const int dy = y2 - y1;
+		const int dx2 = dx * 2;
+		const int dy2 = dy * 2;
+		const int dy2Mindx2 = dy2 - dx2;
 
-		int dx = x2 - x1;
-		int dy = y2 - y1;
+		int Error = dy2 - dx;
 
-		int D = 2*dy-dx;
-		int y = y1;
-		
-		DrawPixel(x1, y1, color);
-		for (int x = x1+1; x < x2; ++x)
+		unsigned int* pixel = &pixels[y1*height+x1];
+		pixel[0] = color;
+		for (int x = x2 - x1 - 1; x > 0; --x)
 		{
-			if (D > 0)
+			if (Error > 0)
 			{
-				y = y+1;
-				D += (2*dy-2*dx);
+				pixel += width;
+				Error += dy2Mindx2;
 			}
 			else
 			{
-				D += 2*dy;
+				Error += dy2;
 			}
-			DrawPixel(x,y,color);
+			(++pixel)[0] = color;
 		}
-
-		/*
-		plotLine(x0,y0, x1,y1)
-		  dx=x1-x0
-		  dy=y1-y0
-
-		  D = 2*dy - dx
-		  plot(x0,y0)
-		  y=y0
-
-		  for x from x0+1 to x1
-			if D > 0
-			  y = y+1
-			  plot(x,y)
-			  D = D + (2*dy-2*dx)
-			else
-			  plot(x,y)
-			  D = D + (2*dy)*/
 	}
 
 private:

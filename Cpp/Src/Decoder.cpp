@@ -20,6 +20,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 		? (float)max(width, height)/2.0f
 		: sqrtf(centerX*centerX + centerY*centerY);
 
+#if 0
 	array<float, 4> srcPixel;
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
@@ -178,10 +179,21 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 		}
 		pixels+=stride;
 	}
+#endif
+
 
 	if (settings.m_decoding.m_showRadialPixels)
 	{
-		dest.DrawLine(128, 128, 500, 190, 0x80808080);
+		unsigned int *pixels = (unsigned int*)dest.GetPixelBuffer();
+		for (unsigned int i = 0, c = dest.GetWidth()*dest.GetHeight(); i < c; ++i)
+		{
+			*pixels = 0xFF000000;
+			++pixels;
+		}
+
+		dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), dest.GetHeight(), 5, 25, 59, 44, 0xFFFFFF);
+
+		//dest.DrawLine(25, 5, 44, 59, 0xFFFFFF);
 	}
 
     return true;
