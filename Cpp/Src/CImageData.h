@@ -174,6 +174,9 @@ public:
 	template <int MINOR_AXIS_MOVEMENT>
 	void DrawLineXMajorAxis(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
 	{
+		pixelStride *= MINOR_AXIS_MOVEMENT;
+		dy *= MINOR_AXIS_MOVEMENT;
+
 		const int dx2 = dx * 2;
 		const int dy2 = dy * 2;
 		const int dy2Mindx2 = dy2 - dx2;
@@ -186,7 +189,7 @@ public:
 			// move on major axis and minor axis
 			if (Error > 0)
 			{
-				pixel += (MINOR_AXIS_MOVEMENT*pixelStride) + 1;
+				pixel += pixelStride + 1;
 				Error += dy2Mindx2;
 			}
 			// move on major axis only
@@ -230,17 +233,12 @@ public:
 			}
 
 			unsigned int* startPixel = &pixels[y1 * pixelStride + x1];
-
-			if (dy < 0)
-				DrawLineXMajorAxis<-1>(startPixel, pixelStride, dx, dy, color);
-
-			/*
 			if (dy > 0)
 				DrawLineXMajorAxis<1>(startPixel, pixelStride, dx, dy, color);
 			else if (dy < 0)
 				DrawLineXMajorAxis<-1>(startPixel, pixelStride, dx, dy, color);
 			else
-				DrawLineXMajorAxis<0>(startPixel, pixelStride, dx, dy, color);*/
+				DrawLineXMajorAxis<0>(startPixel, pixelStride, dx, dy, color);
 		}
 		else
 		{

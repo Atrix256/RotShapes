@@ -195,18 +195,21 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 
 
 		// draw each diagonal line for the angles
-		// TODO: clip lines to rectangle!
+		// TODO: clip lines to rectangle! or to maxdist, whatever is smaller
 		int middlex = dest.GetWidth() / 2;
 		int middley = dest.GetHeight() / 2;
 		for (int i = src.GetHeight(); i >= 0; --i)
 		{
-			float angle = (float)M_PI*((float)i / (float)(src.GetHeight() - 1));
+			float angle = 2.0f*(float)M_PI*((float)i / (float)(src.GetHeight() - 1));
 			int x = (int)(cos(angle)*(float)middlex*0.5f);
 			int y = (int)(sin(angle)*(float)middley*0.5f);
 			dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), middlex, middley, middlex+x, middley+y, 0xFFFFFFFF);
 		}
 
-		//dest.DrawLine(25, 5, 44, 59, 0xFFFFFF);
+		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), middlex, middley, middlex+6, middley+3, 0xFFFFFFFF);
+		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), middlex, middley, middlex+6, middley-3, 0xFFFFFFFF);
+
+		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), 10, 10, 16, 7, 0xFFFFFFFF);
 	}
 
     return true;
