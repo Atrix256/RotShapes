@@ -164,13 +164,54 @@ public:
 		pixelPointer[0] = color;
 	}
 
-	// TODO: other octants, bounds checking, pixel pointer more friendly pixel writes.
-	// TODO: keep a clear (plot(x,y)) version, and a fast version (const dx_two = dx*2 etc)
 	// static_assert(sizeof(color) == 4, "wrongly assuming sizeof(unsigned int) is 32 bits!");
 
 
+	// Generic Y Major Axis Line Drawing.
+	template <int MINOR_AXIS_MOVEMENT>
+	void DrawLineYMajorAxis(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
+	{
+		dy *= MINOR_AXIS_MOVEMENT;
+		
+		const int dx2 = dx * 2;
+		const int dy2 = dy * 2;
+		const int dy2Mindx2 = dy2 - dx2;
+
+		int Error = dy2 - dx;
+
+		*pixel = color;
+		for (int x = dx - 1; x > 0; --x)
+		{
+			// move on major axis and minor axis
+			if (Error > 0)
+			{
+				pixel += pixelStride + MINOR_AXIS_MOVEMENT;
+				Error += dy2Mindx2;
+			}
+			// move on major axis only
+			else
+			{
+				pixel += pixelStride;
+				Error += dy2;
+			}
+			*pixel = color;
+		}
+	}
+
+	// Specialized Y Major Axis Line Drawing optimized for vertical lines
+	template <>
+	void DrawLineYMajorAxis<0>(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
+	{
+		*pixel = color;
+		while (dx)
+		{
+			pixel += pixelStride;
+			*pixel = color;
+			--dx;
+		};
+	}
+
 	// Generic X Major Axis Line Drawing.
-	// Template parameter to help make the error > 0 case faster
 	template <int MINOR_AXIS_MOVEMENT>
 	void DrawLineXMajorAxis(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
 	{
@@ -202,7 +243,7 @@ public:
 		}
 	}
 
-	// Specialized X Major Axis Line Drawing, optimized for horizontal lines
+	// Specialized X Major Axis Line Drawing optimized for horizontal lines
 	template <>
 	void DrawLineXMajorAxis<0>(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
 	{
@@ -250,7 +291,13 @@ public:
 				swap(y1, y2);
 			}
 
-			//DrawLineYMajorAxis(startPixel, pixelStride, dx, dy, color);
+			unsigned int* startPixel = &pixels[y1 * pixelStride + x1];
+			if (dx > 0)
+				DrawLineYMajorAxis<1>(startPixel, pixelStride, dy, dx, color);
+			else if (dx < 0)
+				DrawLineYMajorAxis<-1>(startPixel, pixelStride, dy, dx, color);
+			else
+				DrawLineYMajorAxis<0>(startPixel, pixelStride, dy, dx, color);
 		}
 	}
 

@@ -206,10 +206,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), middlex, middley, middlex+x, middley+y, 0xFFFFFFFF);
 		}
 
-		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), middlex, middley, middlex+6, middley+3, 0xFFFFFFFF);
-		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), middlex, middley, middlex+6, middley-3, 0xFFFFFFFF);
-
-		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), 10, 10, 16, 7, 0xFFFFFFFF);
+		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), 10, 10, 10, 16, 0xFFFFFFFF);
 	}
 
     return true;
