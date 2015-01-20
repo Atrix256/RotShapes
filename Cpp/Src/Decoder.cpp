@@ -20,7 +20,6 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 		? (float)max(width, height)/2.0f
 		: sqrtf(centerX*centerX + centerY*centerY);
 
-#if 0
 	array<float, 4> srcPixel;
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
@@ -94,7 +93,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			{
 				if (debugColors)
 				{
-					pixel[2] = 255;
+					pixel[2] = 128;
 					pixel[1] = 0;
 					pixel[0] = 0;
 				}
@@ -110,7 +109,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 				if (debugColors)
 				{
 					pixel[2] = 0;
-					pixel[1] = 255;
+					pixel[1] = 128;
 					pixel[0] = 0;
 				}
 				else
@@ -126,7 +125,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 				{
 					pixel[2] = 0;
 					pixel[1] = 0;
-					pixel[0] = 255;
+					pixel[0] = 128;
 				}
 				else
 				{
@@ -139,9 +138,9 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			{
 				if (debugColors)
 				{
-					pixel[2] = 255;
-					pixel[1] = 255;
-					pixel[0] = 255;
+					pixel[2] = 128;
+					pixel[1] = 128;
+					pixel[0] = 128;
 				}
 				else
 				{
@@ -151,62 +150,33 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 				}
 			}
 
-			// if we are supposed to show the radial pixel boundaries
-			/*
-			if (settings.m_decoding.m_showRadialPixels && !distTooFar)
-			{
-				// todo: need to draw the lines and circles (bresenham) instead of doing it this way.
-
-				float angleFract = (angle+0.5f) - floor(angle+0.5f);
-				if (angleFract < 0.1f)
-				{
-					pixel[2] = 255;
-					pixel[1] = 255;
-					pixel[0] = 0;
-				}
-
-				float distFract = dist - floor(dist);
-				if (distFract < 0.25f)
-				{
-					pixel[2] = 255;
-					pixel[1] = 255;
-					pixel[0] = 0;
-				}
-			}
-			*/
-
 			pixel += 4;
 		}
 		pixels+=stride;
 	}
-#endif
-
 
 	if (settings.m_decoding.m_showRadialPixels)
 	{
-		// TODO: remove fill!
-		// fill with bs
-		unsigned int *pixels = (unsigned int*)dest.GetPixelBuffer();
-		for (unsigned int i = 0, c = dest.GetWidth()*dest.GetHeight(); i < c; ++i)
-		{
-			*pixels = 0xFF000000;
-			++pixels;
-		}
-
-
-		// draw each diagonal line for the angles
-		// TODO: clip lines to rectangle! or to maxdist, whatever is smaller
+		// draw each line for the angles
 		int middlex = dest.GetWidth() / 2;
 		int middley = dest.GetHeight() / 2;
 		for (int i = src.GetHeight(); i >= 0; --i)
 		{
-			float angle = 2.0f*(float)M_PI*((float)i / (float)(src.GetHeight() - 1));
-			int x = (int)(cos(angle)*(float)middlex*0.5f);
-			int y = (int)(sin(angle)*(float)middley*0.5f);
-			dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), middlex, middley, middlex+x, middley+y, 0xFFFFFFFF);
+			float angle = 2.0f*(float)M_PI*((float)(i+0.5f) / (float)(src.GetHeight()));
+			int x = (int)(cos(angle)*maxDist);
+			int y = (int)(sin(angle)*maxDist);
+			dest.DrawLineClip(middlex, middley, middlex+x, middley+y, 0xFFFFFF00);
 		}
 
-		//dest.DrawLine((unsigned int*)dest.GetPixelBuffer(), dest.GetWidth(), 10, 10, 10, 16, 0xFFFFFFFF);
+		// draw the circles for the distances
+		for (int i = 1; i <= 16; ++i)
+		{
+			float distNorm = ((float)i*16.0f)/256.0f;
+			if (settings.m_sqDist)
+				distNorm *= distNorm;
+			int radius = (int)(maxDist*distNorm);
+			dest.DrawCircleClip(middlex,middley,radius,0xFFFFFF00);
+		}
 	}
 
     return true;

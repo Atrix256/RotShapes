@@ -54,6 +54,9 @@ public:
     unsigned int GetPixelBufferSize() const { return GetStride() * GetHeight(); }
     unsigned char* GetPixelBuffer () const { return m_pixels; }
 
+	//--------------------------------------------------------------------------------------------------------------
+	// PIXEL READS
+	//--------------------------------------------------------------------------------------------------------------
 	void GetPixel(size_t x, size_t y, array<float, 4>& pixel) const
 	{
 		// mod x,y by width, height to do wrap texture mode
@@ -156,149 +159,44 @@ public:
 		pixel[3] = left[3] * fractXOpp + right[3] * fractX;
 	}
 
-	void DrawPixel (int x, int y, unsigned int color)
+	//--------------------------------------------------------------------------------------------------------------
+	// PIXEL WRITES
+	//--------------------------------------------------------------------------------------------------------------
+	void DrawPixelClip (int x, int y, unsigned int color)
 	{
-		// TODO: put this up by getpixel if it's staying around. maybe don't do texture wrap?
-		// mod x,y by width, height to do wrap texture mode
-		unsigned int *pixelPointer = (unsigned int*)(GetPixelBuffer() + (y%GetHeight()) * GetStride() + (x%GetWidth())*4);
-		pixelPointer[0] = color;
+		if (x < 0 || y < 0 || x >= (int)GetWidth() || y >= (int)GetHeight())
+			return;
+
+		((unsigned int*)GetPixelBuffer())[y*GetWidth()+x]=color;
 	}
 
-	// static_assert(sizeof(color) == 4, "wrongly assuming sizeof(unsigned int) is 32 bits!");
-
-
-	// Generic Y Major Axis Line Drawing.
-	template <int MINOR_AXIS_MOVEMENT>
-	void DrawLineYMajorAxis(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
+	void DrawCircleClip (int xm, int ym, int r, unsigned int color)
 	{
-		dy *= MINOR_AXIS_MOVEMENT;
-		
-		const int dx2 = dx * 2;
-		const int dy2 = dy * 2;
-		const int dy2Mindx2 = dy2 - dx2;
-
-		int Error = dy2 - dx;
-
-		*pixel = color;
-		for (int x = dx - 1; x > 0; --x)
-		{
-			// move on major axis and minor axis
-			if (Error > 0)
-			{
-				pixel += pixelStride + MINOR_AXIS_MOVEMENT;
-				Error += dy2Mindx2;
-			}
-			// move on major axis only
-			else
-			{
-				pixel += pixelStride;
-				Error += dy2;
-			}
-			*pixel = color;
-		}
+	   int x = -r, y = 0, err = 2-2*r; /* II. Quadrant */ 
+	   do {
+		  DrawPixelClip(xm-x, ym+y, color); /*   I. Quadrant */
+		  DrawPixelClip(xm-y, ym-x, color); /*  II. Quadrant */
+		  DrawPixelClip(xm+x, ym-y, color); /* III. Quadrant */
+		  DrawPixelClip(xm+y, ym+x, color); /*  IV. Quadrant */
+		  r = err;
+		  if (r <= y) err += ++y*2+1;           /* e_xy+e_y < 0 */
+		  if (r > x || err > y) err += ++x*2+1; /* e_xy+e_x > 0 or no 2nd y-step */
+	   } while (x < 0);
 	}
 
-	// Specialized Y Major Axis Line Drawing optimized for vertical lines
-	template <>
-	void DrawLineYMajorAxis<0>(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
+	void DrawLineClip (int x0, int y0, int x1, int y1, unsigned int color)
 	{
-		*pixel = color;
-		while (dx)
-		{
-			pixel += pixelStride;
-			*pixel = color;
-			--dx;
-		};
-	}
-
-	// Generic X Major Axis Line Drawing.
-	template <int MINOR_AXIS_MOVEMENT>
-	void DrawLineXMajorAxis(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
-	{
-		pixelStride *= MINOR_AXIS_MOVEMENT;
-		dy *= MINOR_AXIS_MOVEMENT;
-
-		const int dx2 = dx * 2;
-		const int dy2 = dy * 2;
-		const int dy2Mindx2 = dy2 - dx2;
-
-		int Error = dy2 - dx;
-
-		*pixel = color;
-		for (int x = dx - 1; x > 0; --x)
-		{
-			// move on major axis and minor axis
-			if (Error > 0)
-			{
-				pixel += pixelStride + 1;
-				Error += dy2Mindx2;
-			}
-			// move on major axis only
-			else
-			{
-				pixel += 1;
-				Error += dy2;
-			}
-			*pixel = color;
-		}
-	}
-
-	// Specialized X Major Axis Line Drawing optimized for horizontal lines
-	template <>
-	void DrawLineXMajorAxis<0>(unsigned int* pixel, int pixelStride, int dx, int dy, unsigned int color)
-	{
-		// In assembly we could do this more efficiently by repeatedly writing color across memory.
-		// Memset won't work here because that only repeats a single byte value, not a 4 byte value.
-		*pixel = color;
-		while (dx)
-		{
-			*(++pixel) = color;
-			--dx;
-		};
-	}
-
-	// Draw an arbitrary line.  Assumes start and end point are within valid range
-	void DrawLine(unsigned int* pixels, int pixelStride, int x1, int y1, int x2, int y2, unsigned int color)
-	{
-		int dx = x2 - x1;
-		int dy = y2 - y1;
-
-		if (abs(dx) >= abs(dy))
-		{
-			if (dx < 0)
-			{
-				dx *= -1;
-				dy *= -1;
-				swap(x1, x2);
-				swap(y1, y2);
-			}
-
-			unsigned int* startPixel = &pixels[y1 * pixelStride + x1];
-			if (dy > 0)
-				DrawLineXMajorAxis<1>(startPixel, pixelStride, dx, dy, color);
-			else if (dy < 0)
-				DrawLineXMajorAxis<-1>(startPixel, pixelStride, dx, dy, color);
-			else
-				DrawLineXMajorAxis<0>(startPixel, pixelStride, dx, dy, color);
-		}
-		else
-		{
-			if (dy < 0)
-			{
-				dx *= -1;
-				dy *= -1;
-				swap(x1, x2);
-				swap(y1, y2);
-			}
-
-			unsigned int* startPixel = &pixels[y1 * pixelStride + x1];
-			if (dx > 0)
-				DrawLineYMajorAxis<1>(startPixel, pixelStride, dy, dx, color);
-			else if (dx < 0)
-				DrawLineYMajorAxis<-1>(startPixel, pixelStride, dy, dx, color);
-			else
-				DrawLineYMajorAxis<0>(startPixel, pixelStride, dy, dx, color);
-		}
+	   int dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
+	   int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+	   int err = dx+dy, e2; /* error value e_xy */
+ 
+	   for(;;){  /* loop */
+		  DrawPixelClip(x0,y0,color);
+		  if (x0==x1 && y0==y1) break;
+		  e2 = 2*err;
+		  if (e2 >= dy) { err += dy; x0 += sx; } /* e_xy+e_x > 0 */
+		  if (e2 <= dx) { err += dx; y0 += sy; } /* e_xy+e_y < 0 */
+	   }
 	}
 
 private:

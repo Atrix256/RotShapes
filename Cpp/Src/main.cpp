@@ -140,7 +140,7 @@ void PrintUsage()
 	Platform::ReportError("  -smartfilter");
 	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.");
 	Platform::ReportError("  -showradialpixels");
-	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.");
+	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.\n.    Every angle is drawn, but only every 16 distances.");
 	Platform::ReportError("\nFormat Options:");
 	Platform::ReportError("  -shortdist");
 	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.");
@@ -150,9 +150,6 @@ void PrintUsage()
 
 int wmain (int argc, wchar_t **argv)
 {
-	// TODO: showradialpixels should draw lines and circles (bressenham) after the fact, not do distance tests!
-	// TODO: blog post showing bressenham line and circle code w/ links to the wikipedia articles
-	// TODO: maybe an option for showradialpixels to only show the distances, or only the angles, or both
 	// TODO: maybe all color should be uint32? or make drawpixel do it in unsigned char [4], but keep it consistent
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 	// TODO: print out encoding and decoding options while we do the work
