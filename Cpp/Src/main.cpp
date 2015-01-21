@@ -150,7 +150,10 @@ void PrintUsage()
 
 int wmain (int argc, wchar_t **argv)
 {
-	// TODO: maybe all color should be uint32? or make drawpixel do it in unsigned char [4], but keep it consistent
+	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
+	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
+	// TODO: with smart filter, if we decide not to blend, add half a pixel to figure out which pixel to use? (this might be taken care of by testing the blend > 0.5f to see which pixel to use)
+	// TODO: test the above with all 3 filtering modes to see how they differ
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 	// TODO: print out encoding and decoding options while we do the work
 	// TODO: make it so we can use all the threads again
