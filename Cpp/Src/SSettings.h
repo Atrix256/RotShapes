@@ -39,6 +39,13 @@ struct SDecodingSettings
 	bool			m_showRadialPixels;
 };
 
+struct SCombineSetings
+{
+	wstring			m_srcFileA;
+	wstring			m_srcFileB;
+	wstring			m_destFile;
+};
+
 struct SSettings
 {
 	SSettings()
@@ -48,6 +55,7 @@ struct SSettings
 
 	SEncodingSettings	m_encoding;
 	SDecodingSettings	m_decoding;
+	SCombineSetings		m_combine;
 
 	bool				m_shortDist;
 	bool				m_sqDist;

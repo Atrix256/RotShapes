@@ -6,4 +6,8 @@ encode and decode:
 just decode:
 -decode encoded.png decoded.png 1024 1024 -debugcolors decodeddc.png -smartfilter
 
- -showradialpixels
+combining:
+-combine encodeda.png encodedb.png encodedc.png
+
+debugging:
+-showradialpixels

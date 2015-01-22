@@ -181,6 +181,38 @@ public:
 	   }
 	}
 
+	//--------------------------------------------------------------------------------------------------------------
+	// IMAGE COPIES
+	//--------------------------------------------------------------------------------------------------------------
+	void DrawImageData (size_t x, size_t y, const CImageDataRGBA& src)
+	{
+		unsigned int drawWidth = GetWidth() - x;
+		unsigned int drawHeight = GetHeight() - y;
+		drawWidth = min(drawWidth, src.GetWidth());
+		drawHeight = min(drawHeight, src.GetHeight());
+
+		int ijkl = 0;
+
+		// TODO: could do better perf wise by keeping pointers into pixel buffers
+		for (unsigned int iy = 0; iy < drawHeight; ++iy)
+		{
+			for (unsigned int ix = 0; ix < drawWidth; ++ix)
+			{
+				array<float, 4> srcPixel;
+				src.GetPixel((float)ix, (float)iy, srcPixel);
+
+				unsigned int destPixel =
+					((unsigned int)srcPixel[3]) << 24 |
+					((unsigned int)srcPixel[2]) << 16 |
+					((unsigned int)srcPixel[1]) << 8 |
+					((unsigned int)srcPixel[0]);
+
+				DrawPixelClip(x + ix, y + iy, destPixel);
+			}
+		}
+		// TODO: do some decoding to verify that this is working? sheets and animation decoding of multi frames
+	}
+
 private:
     unsigned char *m_pixels;
     unsigned int m_width;

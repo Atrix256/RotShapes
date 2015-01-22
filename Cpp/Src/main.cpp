@@ -64,6 +64,31 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			}
 			++index;
 		}
+		else if (!_wcsicmp(argv[index], L"-combine"))
+		{
+			++index;
+			if (index >= argc)
+			{
+				Platform::ReportError("no source file A specified for combining");
+				return false;
+			}
+			settings.m_combine.m_srcFileA = argv[index];
+			++index;
+			if (index >= argc)
+			{
+				Platform::ReportError("no source file B specified for combining");
+				return false;
+			}
+			settings.m_combine.m_srcFileB = argv[index];
+			++index;
+			if (index >= argc)
+			{
+				Platform::ReportError("no destination file specified for combining");
+				return false;
+			}
+			settings.m_combine.m_destFile = argv[index];
+			++index;
+		}
 		else if (!_wcsicmp(argv[index], L"-bw"))
 		{
 			++index;
@@ -146,6 +171,9 @@ void PrintUsage()
 	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.");
 	Platform::ReportError("  -sqdist");
 	Platform::ReportError("    Store squared distance instead of regular distance.\n");
+	Platform::ReportError("\nOther Options:");
+	Platform::ReportError("  -append <sourceA> <sourceB> <destination>");
+	Platform::ReportError("    This will combine the encoded frames of images <sourceA> and <sourceB> and\n    save the result as <destination>. Useful for animations or sprite sheets.\n    <sourceA> and <sourceB> must be the same height.");
 }
 
 int wmain (int argc, wchar_t **argv)
@@ -192,9 +220,10 @@ int wmain (int argc, wchar_t **argv)
 
 	// make sure we have a file to encode or decode
 	if ((settings.m_encoding.m_srcFile.length() == 0 || settings.m_encoding.m_destFile.length() == 0) &&
-		(settings.m_decoding.m_srcFile.length() == 0 || settings.m_decoding.m_destFile.length() == 0))
+		(settings.m_decoding.m_srcFile.length() == 0 || settings.m_decoding.m_destFile.length() == 0) &&
+		(settings.m_combine.m_srcFileA.length() == 0 || settings.m_combine.m_srcFileB.length() == 0 || settings.m_combine.m_srcFileA.length() == 0))
 	{
-		Platform::ReportError("No files specified for encoding or decoding.");
+		Platform::ReportError("No files specified for encoding, decoding or combining.");
 		PrintUsage();
 		return 0;
 	}
@@ -296,6 +325,49 @@ int wmain (int argc, wchar_t **argv)
 				}
 				Platform::ReportError("debug colors decoded image saved: %ls", settings.m_decoding.m_debugColorsFile.c_str());
 			}
+		}
+
+		// combine an image if we should
+		if (settings.m_combine.m_srcFileA.length() > 0 && settings.m_combine.m_srcFileB.length() && settings.m_combine.m_destFile.length() > 0)
+		{
+			// load the source A image
+			CImageDataRGBA sourceImageDataA;
+			if (!Platform::LoadImageFile(settings.m_combine.m_srcFileA.c_str(), sourceImageDataA, false))
+			{
+				Platform::ReportError("Could not load source file A for combining: %ls", settings.m_combine.m_srcFileA.c_str());
+				break;
+			}
+			Platform::ReportError("combining source image A loaded: %ls", settings.m_combine.m_srcFileA.c_str());
+
+			// load the source B image
+			CImageDataRGBA sourceImageDataB;
+			if (!Platform::LoadImageFile(settings.m_combine.m_srcFileB.c_str(), sourceImageDataB, false))
+			{
+				Platform::ReportError("Could not load source file B for combining: %ls", settings.m_combine.m_srcFileB.c_str());
+				break;
+			}
+			Platform::ReportError("combining source image B loaded: %ls", settings.m_combine.m_srcFileB.c_str());
+
+			// make sure they are the same height
+			if (sourceImageDataA.GetHeight() != sourceImageDataB.GetHeight())
+			{
+				Platform::ReportError("Could not combine images, height mismatch! %u vs %u", sourceImageDataA.GetHeight(), sourceImageDataB.GetHeight());
+				break;
+			}
+
+			// combine the images
+			CImageDataRGBA combinedImageData;
+			combinedImageData.AllocatePixels(sourceImageDataA.GetWidth() + sourceImageDataB.GetWidth(), sourceImageDataA.GetHeight());
+			combinedImageData.DrawImageData(0, 0, sourceImageDataA);
+			combinedImageData.DrawImageData(sourceImageDataA.GetWidth(), 0, sourceImageDataB);
+
+			// save the combined image
+			if (!Platform::SaveImageFile(settings.m_combine.m_destFile.c_str(), combinedImageData))
+			{
+				Platform::ReportError("Could not save combined image: %ls", settings.m_combine.m_destFile.c_str());
+				break;
+			}
+			Platform::ReportError("combined image saved: %ls", settings.m_combine.m_destFile.c_str());
 		}
     }
     while (0);
