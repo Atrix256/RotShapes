@@ -167,6 +167,7 @@ int wmain (int argc, wchar_t **argv)
 	// TODO: distance seems to round up from left corner.  should round based on center i think
 	// TODO: make asserts happen in release too!
 	// TODO: test non square images
+	// TODO: test different blends on x vs y for animated stuff.
 	/* TODO:
 	* maybe have a thing when bilinear filtering that throws out info when distances are too far.
 	 * maybe try some kind of custom filtering to ditch that data

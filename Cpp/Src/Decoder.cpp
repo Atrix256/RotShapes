@@ -55,7 +55,7 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 				case ETextureFilter::e_filterNone:
 				{
 					// add half a pixel to do proper rounding when not using filtering
-					src.GetPixel(0, (size_t)(angle+0.5f), srcPixel);
+					src.GetPixel(0.0f, angle+0.5f, srcPixel);
 					break;
 				}
 				case ETextureFilter::e_filterBilinear:

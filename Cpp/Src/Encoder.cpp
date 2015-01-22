@@ -329,7 +329,7 @@ private:
 				}
 
 				// black pixels subtract from the total, white pixels add into the total
-				m_src.GetPixel(ix, iy, pixelData);
+				m_src.GetPixel((float)ix, (float)iy, pixelData);
 				float multiplier =  pixelData[0] > 0 ? 1.0f : -1.0f;
 
 				// add area of polygon into triangleTotal, using ear clipping.  The polygon is garaunteed convex since it's
