@@ -6,4 +6,4 @@ struct SSettings;
 enum class ETextureFilter;
 
 //--------------------------------------------------------------------------------------------------------------
-void Decode(const CImageDataRGBA& src, unsigned int frameIndex, CImageDataRGBA& dest, bool debugColors, const SSettings& settings);
+void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings);

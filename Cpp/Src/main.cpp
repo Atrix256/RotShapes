@@ -94,20 +94,6 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 		{
 			settings.m_animate.m_animate = true;
 			++index;
-			if (index >= argc)
-			{
-				Platform::ReportError("no frame name pattern given for animation");
-				return false;
-			}
-			settings.m_animate.m_frameNamePattern = argv[index];
-			++index;
-			if (index >= argc)
-			{
-				Platform::ReportError("no output gif given for animation");
-				return false;
-			}
-			settings.m_animate.m_outputGif = argv[index];
-			++index;
 			if (index >= argc || swscanf_s(argv[index], L"%u", &settings.m_animate.m_fps) != 1)
 			{
 				Platform::ReportError("no fps given for animation");
@@ -198,7 +184,7 @@ void PrintUsage()
 	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.");
 	Platform::ReportError("  -showradialpixels");
 	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.\n    Every angle is drawn, but only every 16 distances.");
-	Platform::ReportError("  -animate <framenamepattern> <outputgif> <fps> <seconds>");
+	Platform::ReportError("  -animate <fps> <seconds>");
 	Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    This option lets you spit out frames using a frame pattern (use %%i for the\n    frame number), as well as a output gif filename.");
 	Platform::ReportError("    <framenamepattern> is the pattern for frame images. <outputgif> is the name\n    of the gif file to create, <fps> is how many frames per second the\n    animation should have, and <seconds> is how long the animation should be.");
 	Platform::ReportError("\nFormat Options:");
@@ -238,7 +224,7 @@ void DoDecode (const SSettings& settings, const CImageDataRGBA& sourceImageData,
 	for (unsigned int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
 	{
 		// decode the frame
-		Decode(sourceImageData, frameIndex, decodedFrames[frameIndex], debugColors, settings);
+		Decode(sourceImageData, (float)frameIndex, decodedFrames[frameIndex], debugColors, settings);
 		Platform::ReportError("Frame %i decoded", frameIndex);
 
 		// copy it into it's location in the decoded image
@@ -254,8 +240,46 @@ void DoDecode (const SSettings& settings, const CImageDataRGBA& sourceImageData,
 		Platform::ReportError("decoded image saved: %ls", outFile.c_str());
 }
 
+void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceImageData, bool debugColors)
+{
+	// for the case of multiple frames in the encoded image, and decoding it as a sheet, figure out
+	// how many images wide and high (in a square) we are going to decode.
+	unsigned int numFrames = (unsigned int)((float)settings.m_animate.m_fps * settings.m_animate.m_seconds);
+	const wstring& outFile = debugColors ? settings.m_decoding.m_debugColorsFile : settings.m_decoding.m_destFile;
+
+	// decode each frame
+	vector<CImageDataRGBA> decodedFrames;
+	decodedFrames.resize(numFrames);
+	for (unsigned int i = 0; i < numFrames; ++i)
+		decodedFrames[i].AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
+
+	for (unsigned int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+	{
+		// calculate the frame value
+		float frame = ((float)frameIndex / (float)(numFrames-1)) * ((float)sourceImageData.GetWidth()-1);
+
+		// decode the frame
+		Decode(sourceImageData, frame, decodedFrames[frameIndex], debugColors, settings);
+		Platform::ReportError("Frame %i decoded", frameIndex);
+
+		// save the decoded image
+		wchar_t fileName[1024];
+		swprintf_s(fileName, outFile.c_str(), frameIndex);
+
+		// save the decoded image
+		if (!Platform::SaveImageFile(fileName, decodedFrames[frameIndex]))
+			Platform::ReportError("Could not save decoded frame: %ls", outFile.c_str());
+	}
+
+	Platform::ReportError("decoded animation frames saved");
+}
+
 int wmain (int argc, wchar_t **argv)
 {
+	// TODO: option to specify horizontal (time) filtering
+	// TODO: try morphing woman to bat symbol!
+	// TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
+	// TODO: update usage explanation for -animate
 	// TODO: make it so the decode filenames are expected to be a pattern if -animate is used, instead of having separate file names
 	// TODO: finish animation feature!`
 	// TODO: if doing animation, don't need to generate the larger tiled image.
@@ -372,12 +396,24 @@ int wmain (int argc, wchar_t **argv)
 			}
 			Platform::ReportError("decoding source image loaded: %ls", settings.m_decoding.m_srcFile.c_str());
 
-			// decode image
-			DoDecode(settings, sourceImageData, false);
+			if (settings.m_animate.m_animate)
+			{
+				// decode image
+				DoDecodeAnimate(settings, sourceImageData, false);
 			
-			// do a debug color decoding if we should
-			if (settings.m_decoding.m_debugColorsFile.length() > 0)
-				DoDecode(settings, sourceImageData, true);
+				// do a debug color decoding if we should
+				if (settings.m_decoding.m_debugColorsFile.length() > 0)
+					DoDecodeAnimate(settings, sourceImageData, true);
+			}
+			else
+			{
+				// decode image
+				DoDecode(settings, sourceImageData, false);
+			
+				// do a debug color decoding if we should
+				if (settings.m_decoding.m_debugColorsFile.length() > 0)
+					DoDecode(settings, sourceImageData, true);
+			}
 		}
 
 		// combine an image if we should

@@ -8,7 +8,7 @@
 using namespace std;
 
 //--------------------------------------------------------------------------------------------------------------
-void Decode (const CImageDataRGBA& src, unsigned int frameIndex, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
+void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
 {
 	size_t width = dest.GetWidth();
 	size_t height = dest.GetHeight();
@@ -55,17 +55,17 @@ void Decode (const CImageDataRGBA& src, unsigned int frameIndex, CImageDataRGBA&
 				case ETextureFilter::e_filterNone:
 				{
 					// add half a pixel to do proper rounding when not using filtering
-					src.GetPixel((float)frameIndex, angle+0.5f, srcPixel);
+					src.GetPixel(frame, angle+0.5f, srcPixel);
 					break;
 				}
 				case ETextureFilter::e_filterBilinear:
 				{
-					src.GetPixelBilinear((float)frameIndex, angle, srcPixel);
+					src.GetPixelBilinear(frame, angle, srcPixel);
 					break;
 				}
 				case ETextureFilter::e_filterSmart:
 				{
-					src.GetPixelSmart((float)frameIndex, angle, srcPixel);
+					src.GetPixelSmart(frame, angle, srcPixel);
 					break;
 				}
 				default:assert(false);

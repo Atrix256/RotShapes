@@ -55,8 +55,6 @@ struct SAnimateSettings
 	{ }
 
 	bool			m_animate;
-	wstring			m_frameNamePattern;
-	wstring			m_outputGif;
 	unsigned int	m_fps;
 	float			m_seconds;
 };
