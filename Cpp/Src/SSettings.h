@@ -54,6 +54,7 @@ struct SAnimateSettings
 		, m_animate(false)
 	{ }
 
+	wstring			m_destGifFile;
 	bool			m_animate;
 	unsigned int	m_fps;
 	float			m_seconds;

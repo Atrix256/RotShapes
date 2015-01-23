@@ -94,6 +94,13 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 		{
 			settings.m_animate.m_animate = true;
 			++index;
+			if (index >= argc)
+			{
+				Platform::ReportError("no dest gif file specified for animation");
+				return false;
+			}
+			settings.m_animate.m_destGifFile = argv[index];
+			++index;
 			if (index >= argc || swscanf_s(argv[index], L"%u", &settings.m_animate.m_fps) != 1)
 			{
 				Platform::ReportError("no fps given for animation");
@@ -184,7 +191,7 @@ void PrintUsage()
 	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.");
 	Platform::ReportError("  -showradialpixels");
 	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.\n    Every angle is drawn, but only every 16 distances.");
-	Platform::ReportError("  -animate <fps> <seconds>");
+	Platform::ReportError("  -animate <destgiffile> <fps> <seconds>");
 	Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    This option lets you spit out frames using a frame pattern (use %%i for the\n    frame number), as well as a output gif filename.");
 	Platform::ReportError("    <framenamepattern> is the pattern for frame images. <outputgif> is the name\n    of the gif file to create, <fps> is how many frames per second the\n    animation should have, and <seconds> is how long the animation should be.");
 	Platform::ReportError("\nFormat Options:");
@@ -256,7 +263,7 @@ void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceIma
 	for (unsigned int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
 	{
 		// calculate the frame value
-		float frame = ((float)frameIndex / (float)(numFrames-1)) * ((float)sourceImageData.GetWidth()-1);
+		float frame = numFrames < 2 ? 0.0f: ((float)frameIndex / (float)(numFrames - 1)) * ((float)sourceImageData.GetWidth() - 1);
 
 		// decode the frame
 		Decode(sourceImageData, frame, decodedFrames[frameIndex], debugColors, settings);
@@ -270,12 +277,20 @@ void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceIma
 		if (!Platform::SaveImageFile(fileName, decodedFrames[frameIndex]))
 			Platform::ReportError("Could not save decoded frame: %ls", outFile.c_str());
 	}
-
 	Platform::ReportError("decoded animation frames saved");
+
+	// save the animated gif if we aren't doing debug colors
+	if (!debugColors) {
+		if (!Platform::SameAnimatedImageFile(settings.m_animate.m_destGifFile.c_str(), decodedFrames, settings.m_animate.m_fps, settings.m_animate.m_seconds))
+			Platform::ReportError("Could not save animated image: %ls", settings.m_animate.m_destGifFile.c_str());
+		else
+			Platform::ReportError("Saved animated image: %ls", settings.m_animate.m_destGifFile.c_str());
+	}
 }
 
 int wmain (int argc, wchar_t **argv)
 {
+	// TODO: support debug color animated gif somehow?
 	// TODO: option to specify horizontal (time) filtering
 	// TODO: try morphing woman to bat symbol!
 	// TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
@@ -293,7 +308,7 @@ int wmain (int argc, wchar_t **argv)
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 	// TODO: print out encoding and decoding options while we do the work
 	// TODO: make it so we can use all the threads again
-	// TODO: force the encoded image (and other images?) to always be png extension and type somehow?
+	// TODO: force the encoded image (and other images?) to always be png extension and type somehow? (and gif for animated files)
 	// TODO: other features like layering and animation for decoding?
 	// TODO: look through all files for todos
 	// TODO: make a verb to combine encoded images (for animations / sprite sheets). maybe one to split them apart too.
@@ -304,6 +319,7 @@ int wmain (int argc, wchar_t **argv)
 	// TODO: make asserts happen in release too!
 	// TODO: test non square images
 	// TODO: test different blends on x vs y for animated stuff.
+	// TODO: make errors stick out more. too much noise, cant see the errors. maybe save them til the end?
 	/* TODO:
 	* maybe have a thing when bilinear filtering that throws out info when distances are too far.
 	 * maybe try some kind of custom filtering to ditch that data

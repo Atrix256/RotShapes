@@ -1,3 +1,4 @@
+#include <vector>
 
 //--------------------------------------------------------------------------------------------------------------
 // Forward declarations
@@ -15,6 +16,8 @@ namespace Platform
     bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData, bool convertToBlackWhite);
 
     bool SaveImageFile (const wchar_t* fileName, const CImageDataRGBA& imageData);
+
+	bool SameAnimatedImageFile(const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps, float seconds);
 
     void ReportError (const char* format, ...);
 };

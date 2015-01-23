@@ -69,8 +69,8 @@ public:
 		pixel[3] = (float)pixelPointer[3];
 	}
 
-	template <typename FILTER>
-	void GetPixelFiltered (float x, float y, array<float, 4>& pixel, const FILTER& filter) const
+	template <typename FILTERX, typename FILTERY>
+	void GetPixelFiltered(float x, float y, array<float, 4>& pixel, const FILTERX& filterX, const FILTERY& filterY) const
 	{
 		float y1 = floor(y);
 		float x1 = floor(x);
@@ -84,7 +84,7 @@ public:
 			array<float, 4> p2;
 			GetPixel(x1, y1, p1);
 			GetPixel(x1, y1 + 1, p2);
-			filter(p2, p1, left, fractY);
+			filterY(p2, p1, left, fractY);
 		}
 
 		// blend the right pixel
@@ -94,21 +94,26 @@ public:
 			array<float, 4> p2;
 			GetPixel(x1 + 1, y1, p1);
 			GetPixel(x1 + 1, y1 + 1, p2);
-			filter(p2, p1, right, fractY);
+			filterY(p2, p1, right, fractY);
 		}
 
 		//blend the left and right pixels
-		filter(right, left, pixel, fractX);
+		filterX(right, left, pixel, fractX);
+	}
+
+	void GetPixelVanilla(float x, float y, array<float, 4>& pixel) const
+	{
+		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendNone);
 	}
 
 	void GetPixelBilinear (float x, float y, array<float, 4>& pixel) const
 	{
-		GetPixelFiltered(x, y, pixel, PixelBlendLinear);
+		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendLinear);
 	}
 
 	void GetPixelSmart (float x, float y, array<float, 4>& pixel) const
 	{
-		GetPixelFiltered(x, y, pixel, PixelBlendSmart);
+		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendSmart);
 	}
 	
 	static void PixelBlendSmart (const array<float, 4>& a, const array<float, 4>& b, array<float, 4>& c, float weight)
@@ -139,6 +144,11 @@ public:
 		{
 			c[i] = a[i] * weight + b[i] * (1.0f - weight);
 		}
+	}
+
+	static void PixelBlendNone(const array<float, 4>& a, const array<float, 4>& b, array<float, 4>& c, float weight)
+	{
+		c = weight > 0.5f ? a : b;
 	}
 
 	//--------------------------------------------------------------------------------------------------------------

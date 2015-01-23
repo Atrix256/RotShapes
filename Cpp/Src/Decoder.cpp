@@ -55,7 +55,7 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				case ETextureFilter::e_filterNone:
 				{
 					// add half a pixel to do proper rounding when not using filtering
-					src.GetPixel(frame, angle+0.5f, srcPixel);
+					src.GetPixelVanilla(frame, angle+0.5f, srcPixel);
 					break;
 				}
 				case ETextureFilter::e_filterBilinear:

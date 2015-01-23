@@ -314,6 +314,177 @@ namespace Platform
         return ret;
     }
 
+	//--------------------------------------------------------------------------------------------------------------
+	bool SameAnimatedImageFile (const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps, float seconds)
+	{
+		bool ret = true;
+        IWICBitmapEncoder* encoder = NULL;
+        IWICStream* stream = NULL;
+        IWICBitmapFrameEncode* frameEncode = NULL;
+		IWICPalette *palette = NULL;
+
+        do {
+            HRESULT hr = s_factory->CreateEncoder(GUID_ContainerFormatGif, nullptr, &encoder);
+            if (!SUCCEEDED(hr) || encoder == NULL)
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: CreateEncoder");
+                ret = false;
+                break;
+            }
+
+            hr = s_factory->CreateStream(&stream);
+            if (!SUCCEEDED(hr) || stream == NULL)
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: CreateStream");
+                ret = false;
+                break;
+            }
+
+            hr = stream->InitializeFromFilename(fileName, GENERIC_WRITE);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: stream InitializeFromFilename");
+                ret = false;
+                break;
+            }
+
+            hr = encoder->Initialize(stream, WICBitmapEncoderNoCache);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: encoder initialize ");
+                ret = false;
+                break;
+            }
+
+			// TODO: try and re-use frame across loops
+			// TODO: set the right delay per frame (multiples of 10ms?)
+
+			// create a palette
+			hr = s_factory->CreatePalette(&palette);
+			if (!SUCCEEDED(hr) || palette == NULL)
+			{
+				ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not create palette");
+				ret = false;
+				break;
+			}
+
+			// make it a black and white palette
+			hr = palette->InitializePredefined(WICBitmapPaletteTypeFixedBW, false);
+			if (!SUCCEEDED(hr))
+			{
+				ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not make palette black and white");
+				ret = false;
+				break;
+			}
+
+			// for each frame in the image
+			for (unsigned int frameIndex = 0; frameIndex < frames.size(); ++frameIndex)
+			{
+				// create a new frame for our image data
+				hr = encoder->CreateNewFrame(&frameEncode, nullptr);
+				if (!SUCCEEDED(hr) || !frameEncode)
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: couldn't create new frame ");
+					ret = false;
+					break;
+				}
+
+				// initialize the frame
+				hr = frameEncode->Initialize(NULL);
+				if (!SUCCEEDED(hr))
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: encoded frame initialize ");
+					ret = false;
+					break;
+				}
+
+				// set the size of the frame
+				hr = frameEncode->SetSize(frames[frameIndex].GetWidth(), frames[frameIndex].GetHeight());
+				if (!SUCCEEDED(hr))
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: set frame size");
+					ret = false;
+					break;
+				}
+
+				// set the pixel format of the frame
+				WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat8bppIndexed; //GUID_WICPixelFormatBlackWhite
+				hr = frameEncode->SetPixelFormat(&pixelFormat);
+				if (!SUCCEEDED(hr) || pixelFormat != GUID_WICPixelFormat8bppIndexed)
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: set frame pixel format");
+					ret = false;
+					break;
+				}
+
+				// set the palette of the image
+				hr = frameEncode->SetPalette(palette);
+				if (!SUCCEEDED(hr))
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not set palette");
+					ret = false;
+					break;
+				}
+
+				// copy the pixels
+				BYTE *convertedData = new BYTE[frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight()];
+				for (int iy = 0, iyc = frames[frameIndex].GetHeight(); iy < iyc; ++iy)
+				{
+					for (int ix = 0, ixc = frames[frameIndex].GetWidth(); ix < ixc; ++ix)
+					{
+						std::array<float, 4> pixel;
+						frames[frameIndex].GetPixel((float)ix, (float)iy, pixel);
+						convertedData[iy*ixc + ix] = pixel[0] > 0.5f ? 1 : 0;
+					}
+				}
+				hr = frameEncode->WritePixels(frames[frameIndex].GetHeight(), frames[frameIndex].GetWidth(), frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight(), convertedData);
+				delete[] convertedData;
+				if (!SUCCEEDED(hr))
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: frame write pixels");
+					ret = false;
+					break;
+				}
+
+				// commit the frame
+				hr = frameEncode->Commit();
+				if (!SUCCEEDED(hr))
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: frame commit");
+					ret = false;
+					break;
+				}
+
+				frameEncode->Release();
+				frameEncode = NULL;
+			}
+
+            // commit the encoder
+            hr = encoder->Commit();
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: encoder commit");
+                ret = false;
+                break;
+            }
+        }
+        while(0);
+
+		if (palette)
+			palette->Release();
+
+        if (frameEncode)
+            frameEncode->Release();
+
+        if (stream)
+            stream->Release();
+
+        if (encoder)
+            encoder->Release();
+
+        return ret;
+	}
+
     //--------------------------------------------------------------------------------------------------------------
     void ReportError (const char* format, ...)
     {
