@@ -46,6 +46,21 @@ struct SCombineSetings
 	wstring			m_destFile;
 };
 
+struct SAnimateSettings
+{
+	SAnimateSettings()
+		: m_fps(30)
+		, m_seconds(1.0f)
+		, m_animate(false)
+	{ }
+
+	bool			m_animate;
+	wstring			m_frameNamePattern;
+	wstring			m_outputGif;
+	unsigned int	m_fps;
+	float			m_seconds;
+};
+
 struct SSettings
 {
 	SSettings()
@@ -56,6 +71,7 @@ struct SSettings
 	SEncodingSettings	m_encoding;
 	SDecodingSettings	m_decoding;
 	SCombineSetings		m_combine;
+	SAnimateSettings	m_animate;
 
 	bool				m_shortDist;
 	bool				m_sqDist;
