@@ -178,6 +178,7 @@ void PrintUsage()
 
 int wmain (int argc, wchar_t **argv)
 {
+	// TODO: do animation decoding (into a gif? could also just spit out the raw images numbered)
 	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
 	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
 	// TODO: with smart filter, if we decide not to blend, add half a pixel to figure out which pixel to use? (this might be taken care of by testing the blend > 0.5f to see which pixel to use)
@@ -288,15 +289,35 @@ int wmain (int argc, wchar_t **argv)
 			}
 			Platform::ReportError("decoding source image loaded: %ls", settings.m_decoding.m_srcFile.c_str());
 
-			// decode the image
-			CImageDataRGBA decodedImageData;
-			decodedImageData.AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
-			if (!Decode(sourceImageData, decodedImageData, false, settings))
+			// for the case of multiple frames in the encoded image, and decoding it as a sheet, figure out
+			// how many images wide and high (in a square) we are going to decode.
+			unsigned int numFrames = sourceImageData.GetWidth();
+			unsigned int tilesX = 1;
+			unsigned int tilesY = 1;
+			while (tilesX*tilesY < numFrames)
 			{
-				Platform::ReportError("Could not decode image!");
-				break;
+				if (tilesX == tilesY)
+					tilesX++;
+				else
+					tilesY++;
 			}
-			Platform::ReportError("Image decoded");
+
+			// decode each frame to a destination image
+			CImageDataRGBA decodedImageData;
+			CImageDataRGBA decodedFrame;
+			decodedImageData.AllocatePixels(settings.m_decoding.m_width*tilesX,settings.m_decoding.m_height*tilesY);
+			decodedFrame.AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
+			for (unsigned int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+			{
+				// decode the frame
+				Decode(sourceImageData, frameIndex, decodedFrame, false, settings);
+				Platform::ReportError("Frame %i decoded", frameIndex);
+
+				// copy it into it's location in the decoded image
+				int x = (frameIndex % tilesX)*settings.m_decoding.m_width;
+				int y = (frameIndex / tilesX)*settings.m_decoding.m_height;
+				decodedImageData.DrawImageData(x,y,decodedFrame);
+			}
 
 			// save the decoded image
 			if (!Platform::SaveImageFile(settings.m_decoding.m_destFile.c_str(), decodedImageData))
@@ -307,15 +328,20 @@ int wmain (int argc, wchar_t **argv)
 			Platform::ReportError("decoded image saved: %ls", settings.m_decoding.m_destFile.c_str());
 
 			// do a debug color decoding if we should
+			// TODO: do tiling like above!
 			if (settings.m_decoding.m_debugColorsFile.length() > 0)
 			{
-				// decode the image
-				if (!Decode(sourceImageData, decodedImageData, true, settings))
+				for (unsigned int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
 				{
-					Platform::ReportError("Could not decode image for debug colors!");
-					break;
+					// decode the frame
+					Decode(sourceImageData, frameIndex, decodedFrame, true, settings);
+					Platform::ReportError("Frame %i decoded for debug colors", frameIndex);
+
+					// copy it into it's location in the decoded image
+					int x = (frameIndex % tilesX)*settings.m_decoding.m_width;
+					int y = (frameIndex / tilesX)*settings.m_decoding.m_height;
+					decodedImageData.DrawImageData(x,y,decodedFrame);
 				}
-				Platform::ReportError("Image decoded for debug colors");
 
 				// save the decoded image
 				if (!Platform::SaveImageFile(settings.m_decoding.m_debugColorsFile.c_str(), decodedImageData))

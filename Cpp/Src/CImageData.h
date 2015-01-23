@@ -191,9 +191,6 @@ public:
 		drawWidth = min(drawWidth, src.GetWidth());
 		drawHeight = min(drawHeight, src.GetHeight());
 
-		int ijkl = 0;
-
-		// TODO: could do better perf wise by keeping pointers into pixel buffers
 		for (unsigned int iy = 0; iy < drawHeight; ++iy)
 		{
 			for (unsigned int ix = 0; ix < drawWidth; ++ix)
@@ -210,7 +207,6 @@ public:
 				DrawPixelClip(x + ix, y + iy, destPixel);
 			}
 		}
-		// TODO: do some decoding to verify that this is working? sheets and animation decoding of multi frames
 	}
 
 private:

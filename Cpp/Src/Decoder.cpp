@@ -8,7 +8,7 @@
 using namespace std;
 
 //--------------------------------------------------------------------------------------------------------------
-bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
+void Decode (const CImageDataRGBA& src, unsigned int frameIndex, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
 {
 	size_t width = dest.GetWidth();
 	size_t height = dest.GetHeight();
@@ -55,17 +55,17 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 				case ETextureFilter::e_filterNone:
 				{
 					// add half a pixel to do proper rounding when not using filtering
-					src.GetPixel(0.0f, angle+0.5f, srcPixel);
+					src.GetPixel((float)frameIndex, angle+0.5f, srcPixel);
 					break;
 				}
 				case ETextureFilter::e_filterBilinear:
 				{
-					src.GetPixelBilinear(0.0f, angle, srcPixel);
+					src.GetPixelBilinear((float)frameIndex, angle, srcPixel);
 					break;
 				}
 				case ETextureFilter::e_filterSmart:
 				{
-					src.GetPixelSmart(0.0f, angle, srcPixel);
+					src.GetPixelSmart((float)frameIndex, angle, srcPixel);
 					break;
 				}
 				default:assert(false);
@@ -178,6 +178,4 @@ bool Decode (const CImageDataRGBA& src, CImageDataRGBA& dest, bool debugColors, 
 			dest.DrawCircleClip(middlex,middley,radius,0xFFFFFF00);
 		}
 	}
-
-    return true;
 }
