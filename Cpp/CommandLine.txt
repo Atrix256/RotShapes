@@ -11,3 +11,5 @@ combining:
 
 debugging:
 -showradialpixels
+
+-animate 30 2.5 -decode encodedc.png decoded%i.png 1024 1024 -debugcolors decodeddc%i.png -bilinear
