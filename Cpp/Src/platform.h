@@ -17,7 +17,7 @@ namespace Platform
 
     bool SaveImageFile (const wchar_t* fileName, const CImageDataRGBA& imageData);
 
-	bool SameAnimatedImageFile(const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps, float seconds);
+	bool SameAnimatedImageFile(const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps);
 
     void ReportError (const char* format, ...);
 };

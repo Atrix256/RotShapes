@@ -315,13 +315,18 @@ namespace Platform
     }
 
 	//--------------------------------------------------------------------------------------------------------------
-	bool SameAnimatedImageFile (const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps, float seconds)
+	bool SameAnimatedImageFile (const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps)
 	{
 		bool ret = true;
         IWICBitmapEncoder* encoder = NULL;
         IWICStream* stream = NULL;
         IWICBitmapFrameEncode* frameEncode = NULL;
 		IWICPalette *palette = NULL;
+		IWICMetadataQueryWriter *frameMetadataQueryWriter = NULL;
+		IWICMetadataQueryWriter *encoderMetadataQueryWriter = NULL;
+
+		PROPVARIANT propValue;
+		PropVariantInit(&propValue);
 
         do {
             HRESULT hr = s_factory->CreateEncoder(GUID_ContainerFormatGif, nullptr, &encoder);
@@ -356,9 +361,61 @@ namespace Platform
                 break;
             }
 
-			// TODO: try and re-use frame across loops
-			// TODO: set the right delay per frame (multiples of 10ms?)
+			hr = encoder->GetMetadataQueryWriter(&encoderMetadataQueryWriter);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't get encoder's frame meta data query writer");
+                ret = false;
+                break;
+            }
 
+			// We have to write the "/appext/application/NETSCAPE2.0" value into the global metadata.
+			propValue.vt = VT_UI1 | VT_VECTOR;
+			propValue.caub.cElems = 11;
+			propValue.caub.pElems = new UCHAR[11];
+			memcpy(propValue.caub.pElems, "NETSCAPE2.0", 11);
+			hr = encoderMetadataQueryWriter->SetMetadataByName(L"/appext/Application",&propValue);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't write application");
+                ret = false;
+                break;
+            }
+			delete[] propValue.caub.pElems;
+			propValue.caub.pElems = NULL;
+			PropVariantClear(&propValue);
+
+			// Set animated GIF format
+			propValue.vt = VT_UI1 | VT_VECTOR;
+			propValue.caub.cElems = 5;
+			propValue.caub.pElems = new UCHAR[5];
+			*(propValue.caub.pElems) = 3; // must be > 1,
+			*(propValue.caub.pElems + 1) = 1; // defines animated GIF
+			*(propValue.caub.pElems + 2) = 0; // LSB 0 = infinite loop.
+			*(propValue.caub.pElems + 3) = 0; // MSB of iteration count value
+			*(propValue.caub.pElems + 4) = 0; // NULL == end of data
+			hr = encoderMetadataQueryWriter->SetMetadataByName(L"/appext/Data",&propValue);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't write data");
+                ret = false;
+                break;
+            }
+			delete[] propValue.caub.pElems;
+			propValue.caub.pElems = NULL;
+			PropVariantClear(&propValue);
+			propValue.vt = VT_LPSTR;
+			propValue.pszVal = "Yo dude"; // use new-delete[] calls
+			hr = encoderMetadataQueryWriter->SetMetadataByName(L"/commentext/TextEntry",&propValue);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't write text entry");
+                ret = false;
+                break;
+            }
+			propValue.pszVal = NULL;
+			PropVariantClear(&propValue);
+			
 			// create a palette
 			hr = s_factory->CreatePalette(&palette);
 			if (!SUCCEEDED(hr) || palette == NULL)
@@ -378,6 +435,7 @@ namespace Platform
 			}
 
 			// for each frame in the image
+			WORD timeBucket = 0;
 			for (unsigned int frameIndex = 0; frameIndex < frames.size(); ++frameIndex)
 			{
 				// create a new frame for our image data
@@ -446,6 +504,15 @@ namespace Platform
 					break;
 				}
 
+				// get a meta data query writer
+				hr = frameEncode->GetMetadataQueryWriter(&frameMetadataQueryWriter);
+				if (!SUCCEEDED(hr) || !frameMetadataQueryWriter)
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not get meta data query writer");
+					ret = false;
+					break;
+				}
+
 				// commit the frame
 				hr = frameEncode->Commit();
 				if (!SUCCEEDED(hr))
@@ -454,6 +521,23 @@ namespace Platform
 					ret = false;
 					break;
 				}
+				
+				// set the frame delay
+				WORD targetTime = (WORD)(100.0f*(float)(frameIndex+1) / (float)fps);
+				propValue.vt = VT_UI2;
+				propValue.uiVal = targetTime - timeBucket;
+				timeBucket = targetTime;
+				hr = frameMetadataQueryWriter->SetMetadataByName(L"/grctlext/Delay", &propValue);
+				PropVariantClear(&propValue);
+				if (!SUCCEEDED(hr))
+				{
+					ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not set delay metadata");
+					ret = false;
+					break;
+				}
+
+				frameMetadataQueryWriter->Release();
+				frameMetadataQueryWriter = NULL;
 
 				frameEncode->Release();
 				frameEncode = NULL;
@@ -469,6 +553,12 @@ namespace Platform
             }
         }
         while(0);
+
+		if (encoderMetadataQueryWriter)
+			encoderMetadataQueryWriter->Release();
+
+		if (frameMetadataQueryWriter)
+			frameMetadataQueryWriter->Release();
 
 		if (palette)
 			palette->Release();

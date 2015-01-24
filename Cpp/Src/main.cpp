@@ -106,6 +106,8 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 				Platform::ReportError("no fps given for animation");
 				return false;
 			}
+			if (settings.m_animate.m_fps > 50)
+				Platform::ReportError("Warning: chrome doesn't seem to support gifs greater than 50fps, and the gif\nformat doesn't support more than 100fps.");
 			++index;
 			if (index >= argc || swscanf_s(argv[index], L"%f", &settings.m_animate.m_seconds) != 1)
 			{
@@ -281,7 +283,7 @@ void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceIma
 
 	// save the animated gif if we aren't doing debug colors
 	if (!debugColors) {
-		if (!Platform::SameAnimatedImageFile(settings.m_animate.m_destGifFile.c_str(), decodedFrames, settings.m_animate.m_fps, settings.m_animate.m_seconds))
+		if (!Platform::SameAnimatedImageFile(settings.m_animate.m_destGifFile.c_str(), decodedFrames, settings.m_animate.m_fps))
 			Platform::ReportError("Could not save animated image: %ls", settings.m_animate.m_destGifFile.c_str());
 		else
 			Platform::ReportError("Saved animated image: %ls", settings.m_animate.m_destGifFile.c_str());
@@ -290,35 +292,23 @@ void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceIma
 
 int wmain (int argc, wchar_t **argv)
 {
-	// TODO: support debug color animated gif somehow?
-	// TODO: option to specify horizontal (time) filtering
-	// TODO: try morphing woman to bat symbol!
+	// TODO: support anti aliased (greyscale) animated gif when we have AA in regular images.  just use greyscale palette and change conversion code.
 	// TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
 	// TODO: update usage explanation for -animate
-	// TODO: make it so the decode filenames are expected to be a pattern if -animate is used, instead of having separate file names
-	// TODO: finish animation feature!`
-	// TODO: if doing animation, don't need to generate the larger tiled image.
-	// TODO: do animation decoding (into a gif? could also just spit out the raw images numbered)
-	// TODO: animation features for gif: one shot, bounce?  if bounce, speed is made 2x
 	// TODO: instead of always using ReportError() maybe have some other function for non errors
 	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
 	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
-	// TODO: with smart filter, if we decide not to blend, add half a pixel to figure out which pixel to use? (this might be taken care of by testing the blend > 0.5f to see which pixel to use)
-	// TODO: test the above with all 3 filtering modes to see how they differ
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 	// TODO: print out encoding and decoding options while we do the work
 	// TODO: make it so we can use all the threads again
 	// TODO: force the encoded image (and other images?) to always be png extension and type somehow? (and gif for animated files)
 	// TODO: other features like layering and animation for decoding?
 	// TODO: look through all files for todos
-	// TODO: make a verb to combine encoded images (for animations / sprite sheets). maybe one to split them apart too.
-	// TODO: for decoding, let them specify frame number of source image as a float (used as X texture coordinate)
 	// TODO: option for a single 32 bit distance for encoding & decoding!
-	// TODO: option for smoothstep?
+	// TODO: option for smoothstep AA?
 	// TODO: distance seems to round up from left corner.  should round based on center i think
 	// TODO: make asserts happen in release too!
 	// TODO: test non square images
-	// TODO: test different blends on x vs y for animated stuff.
 	// TODO: make errors stick out more. too much noise, cant see the errors. maybe save them til the end?
 	/* TODO:
 	* maybe have a thing when bilinear filtering that throws out info when distances are too far.
@@ -327,8 +317,6 @@ int wmain (int argc, wchar_t **argv)
 
 	* maybe try one of the averages (like, geometric, or something)
 	*/
-	// TODO: combine bilinear and smartfilter into one option: -filter smart/bilinear. wait on this til animation is working
-	// TODO: make a thing where if there is only one argument, if the image has width > 1, it does encoding, else it does decoding? for easy drag / drop usage?
 
 	// show usage if we aren't given enough command line options
 	if (argc <= 1)

@@ -12,4 +12,5 @@ combining:
 debugging:
 -showradialpixels
 
+animating:
 -animate animated.gif 30 1 -decode encodedc.png decoded%i.png 1024 1024 -debugcolors decodeddc%i.png -smartfilter
