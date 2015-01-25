@@ -178,32 +178,32 @@ void PrintUsage()
 	Platform::ReportError("Written by Alan Wolfe daspe@demofox.org");
 	Platform::ReportError("\nUsage:");
 	Platform::ReportError("  -encode <source> <destination> <angles>");
-	Platform::ReportError("    encode the <source> file with <angles> angles and save it as <destination>.");
+	Platform::ReportError("    encode the <source> file with <angles> angles and save it as <destination>.\n");
 	Platform::ReportError("  -decode <source> <destination> <width> <height>");
-	Platform::ReportError("    decode the <source> file into an image that is <width> x <height> in\n    resolution and saves it as <destination>.");
-	Platform::ReportError("\nEncoding Options:");
+	Platform::ReportError("    decode the <source> file into an image that is <width> x <height> in\n    resolution and saves it as <destination>.\n");
+	Platform::ReportError("Encoding Options:");
 	Platform::ReportError("  -bw <filename>");
-	Platform::ReportError("    Save the source image converted to black & white to <filename>.");
-	Platform::ReportError("\nDecoding Options:");
+	Platform::ReportError("    Save the source image converted to black & white to <filename>.\n");
+	Platform::ReportError("Decoding Options:");
 	Platform::ReportError("  -debugcolors <filename>");
-	Platform::ReportError("    decode the encoded regions as black, red, green, blue, white and save it as\n    <filename>.");
+	Platform::ReportError("    decode the encoded regions as black, red, green, blue, white and save it as\n    <filename>.\n");
 	Platform::ReportError("  -bilinear");
-	Platform::ReportError("    Use bilinear filtering when decoding image.");
+	Platform::ReportError("    Use bilinear filtering when decoding image.\n");
 	Platform::ReportError("  -smartfilter");
-	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.");
+	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.\n");
 	Platform::ReportError("  -showradialpixels");
-	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.\n    Every angle is drawn, but only every 16 distances.");
+	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.\n    Every angle is drawn, but only every 16 distances.\n");
 	Platform::ReportError("  -animate <destgiffile> <fps> <seconds>");
-	Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    This option lets you spit out frames using a frame pattern (use %%i for the\n    frame number), as well as a output gif filename.");
-	Platform::ReportError("    <framenamepattern> is the pattern for frame images. <outputgif> is the name\n    of the gif file to create, <fps> is how many frames per second the\n    animation should have, and <seconds> is how long the animation should be.");
-	Platform::ReportError("\nFormat Options:");
+	Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    When this option is specified, it makes an animated gif named\n    <destgiffile> of the animation happening over <seconds> seconds at <fps>");
+	Platform::ReportError("    frames per second.  This option also assumes that the decoded filenames have    a %%i in them where you want a frame number, and will output all frames of\n    the animation used to make the gif.\n");
+	Platform::ReportError("Format Options:");
 	Platform::ReportError("  -shortdist");
-	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.");
+	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.\n");
 	Platform::ReportError("  -sqdist");
 	Platform::ReportError("    Store squared distance instead of regular distance.\n");
-	Platform::ReportError("\nOther Options:");
+	Platform::ReportError("Other Options:");
 	Platform::ReportError("  -append <sourceA> <sourceB> <destination>");
-	Platform::ReportError("    This will combine the encoded frames of images <sourceA> and <sourceB> and\n    save the result as <destination>. Useful for animations or sprite sheets.\n    <sourceA> and <sourceB> must be the same height.");
+	Platform::ReportError("    This will combine the encoded frames of images <sourceA> and <sourceB> and\n    save the result as <destination>. Useful for animations or sprite sheets.\n    <sourceA> and <sourceB> must be the same height.\n");
 }
 
 void DoDecode (const SSettings& settings, const CImageDataRGBA& sourceImageData, bool debugColors)
@@ -294,19 +294,25 @@ int wmain (int argc, wchar_t **argv)
 {
 	
 	// ===== FEATURE TODOS =====
+
 	// TODO: smart filter work: when discontiuous, try other channel?
-	// TODO: option for a single 32 bit distance for encoding & decoding!
-	// TODO: option for smoothstep AA?
-	// TODO: look through all files for todos
-	// TODO: Layering?
-	// TODO: support anti aliased (greyscale) animated gif when we have AA in regular images.  just use greyscale palette and change conversion code.
-	// TODO: update usage explanation for -animate
-	// TODO: instead of always using ReportError() maybe have some other function for non errors
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
-	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
+
+	// TODO: option for smoothstep AA?
+	// TODO: support anti aliased (greyscale) animated gif when we have AA in regular images.  just use greyscale palette and change conversion code.
+
+	// TODO: look through all files for todos
+	// TODO: instead of always using ReportError() maybe have some other function for non errors
+	
+
+	
+	// ===== MAYBE FEATURES
+	// TODO: option for a single 32 bit distance for encoding & decoding!
+	// TODO: Layering?
 	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
 	// maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
 	// maybe try one of the averages (like, geometric, or something)
+	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
 
 	// ===== PROGRAM TODOS =====
 	// TODO: distance seems to round up from left corner.  should round based on center i think
