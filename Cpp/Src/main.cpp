@@ -292,31 +292,30 @@ void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceIma
 
 int wmain (int argc, wchar_t **argv)
 {
-	// TODO: support anti aliased (greyscale) animated gif when we have AA in regular images.  just use greyscale palette and change conversion code.
-	// TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
-	// TODO: update usage explanation for -animate
-	// TODO: instead of always using ReportError() maybe have some other function for non errors
-	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
-	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
-	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
-	// TODO: print out encoding and decoding options while we do the work
-	// TODO: make it so we can use all the threads again
-	// TODO: force the encoded image (and other images?) to always be png extension and type somehow? (and gif for animated files)
-	// TODO: other features like layering and animation for decoding?
-	// TODO: look through all files for todos
+	
+	// ===== FEATURE TODOS =====
+	// TODO: smart filter work: when discontiuous, try other channel?
 	// TODO: option for a single 32 bit distance for encoding & decoding!
 	// TODO: option for smoothstep AA?
+	// TODO: look through all files for todos
+	// TODO: Layering?
+	// TODO: support anti aliased (greyscale) animated gif when we have AA in regular images.  just use greyscale palette and change conversion code.
+	// TODO: update usage explanation for -animate
+	// TODO: instead of always using ReportError() maybe have some other function for non errors
+	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
+	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
+	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
+	// maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
+	// maybe try one of the averages (like, geometric, or something)
+
+	// ===== PROGRAM TODOS =====
 	// TODO: distance seems to round up from left corner.  should round based on center i think
 	// TODO: make asserts happen in release too!
-	// TODO: test non square images
+	// TODO: print out encoding and decoding options while we do the work
+	// TODO: make it so we can use all the threads again
+	// TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
+	// TODO: force the encoded image (and other images?) to always be png extension and type somehow? (and gif for animated files)
 	// TODO: make errors stick out more. too much noise, cant see the errors. maybe save them til the end?
-	/* TODO:
-	* maybe have a thing when bilinear filtering that throws out info when distances are too far.
-	 * maybe try some kind of custom filtering to ditch that data
-	 * maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
-
-	* maybe try one of the averages (like, geometric, or something)
-	*/
 
 	// show usage if we aren't given enough command line options
 	if (argc <= 1)
