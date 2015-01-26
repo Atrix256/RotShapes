@@ -426,10 +426,10 @@ namespace Platform
 			}
 
 			// make it a black and white palette
-			hr = palette->InitializePredefined(WICBitmapPaletteTypeFixedBW, false);
+			hr = palette->InitializePredefined(WICBitmapPaletteTypeFixedGray256, false);
 			if (!SUCCEEDED(hr))
 			{
-				ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not make palette black and white");
+				ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not make greyscale palette");
 				ret = false;
 				break;
 			}
@@ -492,7 +492,8 @@ namespace Platform
 					{
 						std::array<float, 4> pixel;
 						frames[frameIndex].GetPixel((float)ix, (float)iy, pixel);
-						convertedData[iy*ixc + ix] = pixel[0] > 0.5f ? 1 : 0;
+						//convertedData[iy*ixc + ix] = pixel[0] > 0.5f ? 1 : 0;
+						convertedData[iy*ixc + ix] = (BYTE)pixel[0];
 					}
 				}
 				hr = frameEncode->WritePixels(frames[frameIndex].GetHeight(), frames[frameIndex].GetWidth(), frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight(), convertedData);

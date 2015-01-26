@@ -71,7 +71,6 @@ public:
 	//----------------------------------------------------------------------------------------------------------
     bool Encode ()
 	{
-		// TODO: figure out why the multiple threads is having issues
 		// make a thread slot for each core we have available, making sure to at least have 1 thread.
 		// also create a threaddata object per thread
 		auto numThreads = thread::hardware_concurrency();

@@ -8,6 +8,18 @@
 using namespace std;
 
 //--------------------------------------------------------------------------------------------------------------
+float SmoothStep (float value, float a, float b)
+{
+	if (value < a)
+		return 0.0f;
+	else if (value > b)
+		return 1.0f;
+
+	float t = (value-a) / (b-a);
+	return 3*t*t-2*t*t*t;
+}
+
+//--------------------------------------------------------------------------------------------------------------
 void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
 {
 	size_t width = dest.GetWidth();
@@ -99,9 +111,13 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				}
 				else
 				{
-					pixel[2] = 255;
-					pixel[1] = 255;
-					pixel[0] = 255;
+					unsigned char value = 255;
+					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
+						value = (unsigned char)(255.0f*SmoothStep(dist-srcPixel[2], 0, settings.m_decoding.m_AAParam*255.0f));
+
+					pixel[2] = value;
+					pixel[1] = value;
+					pixel[0] = value;
 				}
 			}
 			else if (dist < srcPixel[0])
@@ -114,9 +130,13 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				}
 				else
 				{
-					pixel[2] = 0;
-					pixel[1] = 0;
-					pixel[0] = 0;
+					unsigned char value = 255;
+					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
+						value = (unsigned char)(255.0f*(1.0f - SmoothStep(dist-srcPixel[1], 0, settings.m_decoding.m_AAParam*255.0f)));
+
+					pixel[2] = value;
+					pixel[1] = value;
+					pixel[0] = value;
 				}
 			}
 			else if (dist < srcPixel[3])
@@ -129,9 +149,13 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				}
 				else
 				{
-					pixel[2] = 255;
-					pixel[1] = 255;
-					pixel[0] = 255;
+					unsigned char value = 255;
+					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
+						value = (unsigned char)(255.0f*SmoothStep(dist-srcPixel[0], 0, settings.m_decoding.m_AAParam*255.0f));
+
+					pixel[2] = value;
+					pixel[1] = value;
+					pixel[0] = value;
 				}
 			}
 			else
@@ -144,9 +168,13 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				}
 				else
 				{
-					pixel[2] = 0;
-					pixel[1] = 0;
-					pixel[0] = 0;
+					unsigned char value = 255;
+					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
+						value = (unsigned char)(255.0f*(1.0f - SmoothStep(dist-srcPixel[3], 0, settings.m_decoding.m_AAParam*255.0f)));
+
+					pixel[2] = value;
+					pixel[1] = value;
+					pixel[0] = value;
 				}
 			}
 

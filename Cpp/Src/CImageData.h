@@ -118,11 +118,6 @@ public:
 	
 	static void PixelBlendSmart (const array<float, 4>& a, const array<float, 4>& b, array<float, 4>& c, float weight)
 	{
-		// TODO: try rejecting a pixel if any of the channels are "bad"
-		// TODO: try NOT rejecting the full pixel, but just the "bad" parts of it?
-		// TODO: play around with thresholds, or expose as a parameter
-		// TODO: try to match up channels 0&2 1&3 if they are both bad perhaps?
-
 		for (int i = 0; i < a._EEN_SIZE; ++i)
 		{
 			float dist = abs((float)a[i] - (float)b[i]);

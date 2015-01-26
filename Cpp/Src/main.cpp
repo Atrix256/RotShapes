@@ -127,12 +127,28 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			settings.m_encoding.m_convertedFile = argv[index];
 			++index;
 		}
-		else if (!_wcsicmp(argv[index], L"-bilinear"))
+		else if (!_wcsicmp(argv[index], L"-aasmoothstep"))
+		{
+			++index;
+			settings.m_decoding.m_AAMethod = EAAMethod::e_AASmoothStep;
+			if (index >= argc || swscanf_s(argv[index],L"%f",&settings.m_decoding.m_AAParam) !=1)
+			{
+				Platform::ReportError("no distance specified for anti aliasing");
+				return false;
+			}
+			if (settings.m_decoding.m_AAParam < 0.0f || settings.m_decoding.m_AAParam > 1.0f)
+			{
+				Platform::ReportError("distance must be between 0 and 1");
+				return false;
+			}
+			++index;
+		}
+		else if (!_wcsicmp(argv[index], L"-filterbilinear"))
 		{
 			settings.m_decoding.m_textureFilter = ETextureFilter::e_filterBilinear;
 			++index;
 		}
-		else if (!_wcsicmp(argv[index], L"-smartfilter"))
+		else if (!_wcsicmp(argv[index], L"-filtersmart"))
 		{
 			settings.m_decoding.m_textureFilter = ETextureFilter::e_filterSmart;
 			++index;
@@ -187,15 +203,17 @@ void PrintUsage()
 	Platform::ReportError("Decoding Options:");
 	Platform::ReportError("  -debugcolors <filename>");
 	Platform::ReportError("    decode the encoded regions as black, red, green, blue, white and save it as\n    <filename>.\n");
-	Platform::ReportError("  -bilinear");
+	Platform::ReportError("  -filterbilinear");
 	Platform::ReportError("    Use bilinear filtering when decoding image.\n");
-	Platform::ReportError("  -smartfilter");
+	Platform::ReportError("  -filtersmart");
 	Platform::ReportError("    Use bilinear filtering when decoding image on the x axis (time), but only\n    bilinear filter on the y axis (angles) if there isn't too large of a\n    discontinuity.\n");
 	Platform::ReportError("  -showradialpixels");
 	Platform::ReportError("    This option will show the radial pixel boundaries in the decoded images.\n    Every angle is drawn, but only every 16 distances.\n");
 	Platform::ReportError("  -animate <destgiffile> <fps> <seconds>");
 	Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    When this option is specified, it makes an animated gif named\n    <destgiffile> of the animation happening over <seconds> seconds at <fps>");
 	Platform::ReportError("    frames per second.  This option also assumes that the decoded filenames have    a %%i in them where you want a frame number, and will output all frames of\n    the animation used to make the gif.\n");
+	Platform::ReportError("  -aasmoothstep <distance>");
+	Platform::ReportError("    This option will use the specifed <distance> (from 0 - 1) as a distance to\n    smoothstep between black and white at color boundaries.\n");
 	Platform::ReportError("Format Options:");
 	Platform::ReportError("  -shortdist");
 	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.\n");
@@ -295,11 +313,10 @@ int wmain (int argc, wchar_t **argv)
 	
 	// ===== FEATURE TODOS =====
 
+	// TODO: gradient based AA option
+
 	// TODO: smart filter work: when discontiuous, try other channel?
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
-
-	// TODO: option for smoothstep AA?
-	// TODO: support anti aliased (greyscale) animated gif when we have AA in regular images.  just use greyscale palette and change conversion code.
 
 	// TODO: look through all files for todos
 	// TODO: instead of always using ReportError() maybe have some other function for non errors
