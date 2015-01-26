@@ -143,6 +143,22 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			}
 			++index;
 		}
+		else if (!_wcsicmp(argv[index], L"-aasmoothstepgradient"))
+		{
+			++index;
+			settings.m_decoding.m_AAMethod = EAAMethod::e_AASmoothStepGradient;
+			if (index >= argc || swscanf_s(argv[index], L"%f", &settings.m_decoding.m_AAParam) != 1)
+			{
+				Platform::ReportError("no distance specified for anti aliasing");
+				return false;
+			}
+			if (settings.m_decoding.m_AAParam < 0.0f || settings.m_decoding.m_AAParam > 1.0f)
+			{
+				Platform::ReportError("distance must be between 0 and 1");
+				return false;
+			}
+			++index;
+		}
 		else if (!_wcsicmp(argv[index], L"-filterbilinear"))
 		{
 			settings.m_decoding.m_textureFilter = ETextureFilter::e_filterBilinear;
@@ -213,7 +229,9 @@ void PrintUsage()
 	Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    When this option is specified, it makes an animated gif named\n    <destgiffile> of the animation happening over <seconds> seconds at <fps>");
 	Platform::ReportError("    frames per second.  This option also assumes that the decoded filenames have    a %%i in them where you want a frame number, and will output all frames of\n    the animation used to make the gif.\n");
 	Platform::ReportError("  -aasmoothstep <distance>");
-	Platform::ReportError("    This option will use the specifed <distance> (from 0 - 1) as a distance to\n    smoothstep between black and white at color boundaries.\n");
+	Platform::ReportError("    This option will use the specifed <distance> (from 0 - 1) as a distance to\n    smoothstep between black and white at color boundaries.\n    Uses distance from center, not shortest distance from edge.\n");
+	Platform::ReportError("  -aasmoothstepgradient <distance>");
+	Platform::ReportError("    same as -aasmoothstep, but uses distance from edge for better AA\n");
 	Platform::ReportError("Format Options:");
 	Platform::ReportError("  -shortdist");
 	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.\n");
@@ -313,10 +331,16 @@ int wmain (int argc, wchar_t **argv)
 	
 	// ===== FEATURE TODOS =====
 
-	// TODO: gradient based AA option
+	// TODO: make -smoothstepgradient work
+	//  * do distance from point (pixel) to line (defined by tangent at pixel angle). can work in polar space, that ought to be fine, so it's linear!
+	//   * actually, tangent at pixel angle may not be appropriate. need to think about it or test it out.  Larger distances would make it less accurate but maybe its ok.
+	// TODO: finish this stuff! test with all AA options to make sure everything is still happy!
+	// TODO: probably need pixel samplers to return slope info.  w/ smart we are hitting the problems that smoothstep has at boundaries.
 
 	// TODO: smart filter work: when discontiuous, try other channel?
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
+
+	// TODO: expose smart filter threshold as a parameter
 
 	// TODO: look through all files for todos
 	// TODO: instead of always using ReportError() maybe have some other function for non errors
@@ -325,9 +349,9 @@ int wmain (int argc, wchar_t **argv)
 	
 	// ===== MAYBE FEATURES
 	// TODO: option for a single 32 bit distance for encoding & decoding!
-	// TODO: Layering?
-	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
+	// TODO: Layering and color tint?
 	// maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
+	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
 	// maybe try one of the averages (like, geometric, or something)
 	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
 

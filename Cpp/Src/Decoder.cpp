@@ -8,6 +8,16 @@
 using namespace std;
 
 //--------------------------------------------------------------------------------------------------------------
+float DistanceFromPointToLine(float AX, float AY, float BX, float BY, float PX, float PY)
+{
+	// given a line defined by A and B, this tells you how far away the point P is from that line
+	// from http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+
+	return abs((BY - AY)*PX - (BX - AX)*PY + BX*AY - BY*AX) /
+			sqrt((BY-AY)*(BY-AY)+(BX-AX)*(BX-AX));
+}
+
+//--------------------------------------------------------------------------------------------------------------
 float SmoothStep (float value, float a, float b)
 {
 	if (value < a)
@@ -33,6 +43,8 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 		: sqrtf(centerX*centerX + centerY*centerY);
 
 	array<float, 4> srcPixel;
+	array<float, 4> srcPixelSlope;  // used for -smoothstepgradient
+	const float h = -0.01f;
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
 	{
@@ -68,16 +80,24 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				{
 					// add half a pixel to do proper rounding when not using filtering
 					src.GetPixelVanilla(frame, angle+0.5f, srcPixel);
+
+					// assume flat slope when not doing any filtering
+					srcPixelSlope[0] = 0.0f;
+					srcPixelSlope[1] = 0.0f;
+					srcPixelSlope[2] = 0.0f;
+					srcPixelSlope[3] = 0.0f;
 					break;
 				}
 				case ETextureFilter::e_filterBilinear:
 				{
 					src.GetPixelBilinear(frame, angle, srcPixel);
+					src.GetPixelBilinear(frame, angle + h, srcPixelSlope);
 					break;
 				}
 				case ETextureFilter::e_filterSmart:
 				{
 					src.GetPixelSmart(frame, angle, srcPixel);
+					src.GetPixelSmart(frame, angle + h, srcPixelSlope);
 					break;
 				}
 				default:assert(false);
@@ -112,9 +132,15 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				else
 				{
 					unsigned char value = 255;
-					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
-						value = (unsigned char)(255.0f*SmoothStep(dist-srcPixel[2], 0, settings.m_decoding.m_AAParam*255.0f));
+					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+					{
+						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
+							? DistanceFromPointToLine(angle, srcPixel[2], angle + h, srcPixelSlope[2], angle, dist)
+							: dist - srcPixel[2];
 
+						value = (unsigned char)(255.0f*SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f));
+					}
+						
 					pixel[2] = value;
 					pixel[1] = value;
 					pixel[0] = value;
@@ -130,9 +156,15 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				}
 				else
 				{
-					unsigned char value = 255;
-					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
-						value = (unsigned char)(255.0f*(1.0f - SmoothStep(dist-srcPixel[1], 0, settings.m_decoding.m_AAParam*255.0f)));
+					unsigned char value = 0;
+					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+					{
+						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
+							? DistanceFromPointToLine(angle, srcPixel[1], angle + h, srcPixelSlope[1], angle, dist)
+							: dist - srcPixel[1];
+
+						value = (unsigned char)(255.0f*(1.0f - SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f)));
+					}
 
 					pixel[2] = value;
 					pixel[1] = value;
@@ -150,8 +182,14 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				else
 				{
 					unsigned char value = 255;
-					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
-						value = (unsigned char)(255.0f*SmoothStep(dist-srcPixel[0], 0, settings.m_decoding.m_AAParam*255.0f));
+					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+					{
+						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
+							? DistanceFromPointToLine(angle, srcPixel[0], angle + h, srcPixelSlope[0], angle, dist)
+							: dist - srcPixel[0];
+
+						value = (unsigned char)(255.0f*SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f));
+					}
 
 					pixel[2] = value;
 					pixel[1] = value;
@@ -168,9 +206,15 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				}
 				else
 				{
-					unsigned char value = 255;
-					if (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStep)
-						value = (unsigned char)(255.0f*(1.0f - SmoothStep(dist-srcPixel[3], 0, settings.m_decoding.m_AAParam*255.0f)));
+					unsigned char value = 0;
+					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+					{
+						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
+							? DistanceFromPointToLine(angle, srcPixel[3], angle + h, srcPixelSlope[3], angle, dist)
+							: dist - srcPixel[3];
+
+						value = (unsigned char)(255.0f*(1.0f - SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f)));
+					}
 
 					pixel[2] = value;
 					pixel[1] = value;

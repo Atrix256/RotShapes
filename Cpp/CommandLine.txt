@@ -4,7 +4,7 @@ encode and decode:
 -encode ../Assets/batman_256.png encoded.png 256 -bw bw.png -decode encoded.png decoded.png 1024 1024 -debugcolors decodeddc.png -filtersmart
 
 just decode:
--decode encoded.png decoded.png 1024 1024 -debugcolors decodeddc.png -filtersmart
+-decode encoded.png decoded.png 1024 1024 -debugcolors decodeddc.png -filtersmart -aasmoothstepgradient 0.01
 
 combining:
 -combine encodeda.png encodedb.png encodedc.png

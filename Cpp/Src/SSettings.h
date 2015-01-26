@@ -12,7 +12,8 @@ enum class ETextureFilter
 enum class EAAMethod
 {
 	e_AANone,
-	e_AASmoothStep
+	e_AASmoothStep,
+	e_AASmoothStepGradient
 };
 
 struct SEncodingSettings

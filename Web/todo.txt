@@ -125,7 +125,7 @@ Later...
 * polar something or rather?
 
 * dual annulus polar shape encoding!
-
+	
 =====REFERENCES=====
  * valve distance textures
 
@@ -142,6 +142,8 @@ https://www.sthu.org/research/voronoidiagrams/
 
 Sutherland-Hodgman algorithm (for encoding)
 http://en.wikipedia.org/wiki/Sutherland%E2%80%93Hodgman_algorithm
+
+? something about using smoothstep for AA, or hermitze / bez / bernstein polynomials for AA?
 
 =====FUTURE WORK=====
 
