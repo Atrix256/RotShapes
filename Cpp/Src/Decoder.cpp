@@ -82,10 +82,7 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 					src.GetPixelVanilla(frame, angle+0.5f, srcPixel);
 
 					// assume flat slope when not doing any filtering
-					srcPixelSlope[0] = 0.0f;
-					srcPixelSlope[1] = 0.0f;
-					srcPixelSlope[2] = 0.0f;
-					srcPixelSlope[3] = 0.0f;
+					srcPixelSlope = srcPixel;
 					break;
 				}
 				case ETextureFilter::e_filterBilinear:
