@@ -1,6 +1,7 @@
 #include "Decoder.h"
 #include "CImageData.h"
 #include "SSettings.h"
+#include <vector>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -30,7 +31,7 @@ float SmoothStep (float value, float a, float b)
 }
 
 //--------------------------------------------------------------------------------------------------------------
-void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
+void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings, float OffsetX, float OffsetY)
 {
 	size_t width = dest.GetWidth();
 	size_t height = dest.GetHeight();
@@ -48,11 +49,11 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
 	{
-		float y = (float)iy - centerY;
+		float y = OffsetY + (float)iy - centerY;
 		unsigned char* pixel = pixels;
 		for (size_t ix = 0; ix < width; ++ix)
 		{
-			float x = (float)ix - centerX;
+			float x = OffsetX + (float)ix - centerX;
 
 			// calculate the angle, as the y coordinate to sample the source data from
 			float angle = atan2(y,x) / ((float)M_PI*2.0f);
@@ -129,7 +130,7 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				else
 				{
 					unsigned char value = 255;
-					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
 					{
 						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
 							? DistanceFromPointToLine(angle, srcPixel[2], angle + h, srcPixelSlope[2], angle, dist)
@@ -154,7 +155,7 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				else
 				{
 					unsigned char value = 0;
-					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
 					{
 						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
 							? DistanceFromPointToLine(angle, srcPixel[1], angle + h, srcPixelSlope[1], angle, dist)
@@ -179,7 +180,7 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				else
 				{
 					unsigned char value = 255;
-					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
 					{
 						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
 							? DistanceFromPointToLine(angle, srcPixel[0], angle + h, srcPixelSlope[0], angle, dist)
@@ -204,7 +205,7 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 				else
 				{
 					unsigned char value = 0;
-					if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone)
+                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
 					{
 						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
 							? DistanceFromPointToLine(angle, srcPixel[3], angle + h, srcPixelSlope[3], angle, dist)
@@ -247,4 +248,80 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
 			dest.DrawCircleClip(middlex,middley,radius,0xFFFFFF00);
 		}
 	}
+}
+
+//--------------------------------------------------------------------------------------------------------------
+void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
+{
+    // if not doing MSAA, do a decode and bail out
+    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples || (int)settings.m_decoding.m_AAParam == 1)
+    {
+        DecodeInternal(src, frame, dest, debugColors, settings, 0.0f, 0.0f);
+        return;
+    }
+
+    // else we are doing MSAA so make it happen.
+
+    // allocate pixels for all our samples
+    std::vector<CImageDataRGBA> samples;
+    samples.resize((int)settings.m_decoding.m_AAParam);
+    std::for_each(samples.begin(), samples.end(),
+        [&](CImageDataRGBA& sample)
+        {
+            sample.AllocatePixels(dest.GetWidth(), dest.GetHeight());
+        }
+    );
+
+    // decode all the samples
+    for (size_t i = 0, c = samples.size(); i < c; ++i)
+    {
+        float offsetX;
+        float offsetY;
+
+        const float c_offset = 0.5f;
+
+        if (i == 0)
+        {
+            offsetX = 0.0f;
+            offsetY = 0.0f;
+        }
+        else
+        {
+            if (i == 1 || i == 3)
+                offsetX = -c_offset;
+            else
+                offsetX = c_offset;
+
+            if (i == 1 || i == 2)
+                offsetY = -c_offset;
+            else
+                offsetY = c_offset;
+        }
+
+        DecodeInternal(src, frame, samples[i], debugColors, settings, offsetX, offsetY);
+    }
+
+    // average the result into dest
+    for (size_t y = 0, yc = dest.GetHeight(); y < yc; ++y)
+    {
+        for (size_t x = 0, xc = dest.GetWidth(); x < xc; ++x)
+        {
+            array<float, 4> pixelAvg = { 0.0f, 0.0f, 0.0f, 0.0f };
+            for (size_t i = 0, c = samples.size(); i < c; ++i)
+            {
+                array<float, 4> pixel;
+                samples[i].GetPixel((float)x, (float)y, pixel);
+                pixelAvg[0] += pixel[0];
+                pixelAvg[1] += pixel[1];
+                pixelAvg[2] += pixel[2];
+                pixelAvg[3] += pixel[3];
+            }
+            pixelAvg[0] /= (float)samples.size();
+            pixelAvg[1] /= (float)samples.size();
+            pixelAvg[2] /= (float)samples.size();
+            pixelAvg[3] /= (float)samples.size();
+
+            dest.SetPixel((float)x, (float)y, pixelAvg);
+        }
+    }
 }

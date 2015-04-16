@@ -13,7 +13,8 @@ enum class EAAMethod
 {
 	e_AANone,
 	e_AASmoothStep,
-	e_AASmoothStepGradient
+	e_AASmoothStepGradient,
+    e_AAMultipleSamples  // MSAA
 };
 
 struct SEncodingSettings

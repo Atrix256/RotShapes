@@ -149,6 +149,18 @@ public:
 	//--------------------------------------------------------------------------------------------------------------
 	// PIXEL WRITES: unsigned int 0xAARRGGBB
 	//--------------------------------------------------------------------------------------------------------------
+    void SetPixel(float x, float y, array<float, 4>& pixel) const
+    {
+        // mod x,y by width, height to do wrap texture mode
+        size_t xx = (size_t)x;
+        size_t yy = (size_t)y;
+        unsigned char *pixelPointer = GetPixelBuffer() + (yy%GetHeight()) * GetStride() + (xx%GetWidth()) * 4;
+        pixelPointer[0] = (unsigned char)pixel[0];
+        pixelPointer[1] = (unsigned char)pixel[1];
+        pixelPointer[2] = (unsigned char)pixel[2];
+        pixelPointer[3] = (unsigned char)pixel[3];
+    }
+
 	void DrawPixelClip (int x, int y, unsigned int color)
 	{
 		if (x < 0 || y < 0 || x >= (int)GetWidth() || y >= (int)GetHeight())

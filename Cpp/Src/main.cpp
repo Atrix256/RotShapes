@@ -159,6 +159,22 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			}
 			++index;
 		}
+        else if (!_wcsicmp(argv[index], L"-aams"))
+        {
+            ++index;
+            settings.m_decoding.m_AAMethod = EAAMethod::e_AAMultipleSamples;
+            if (index >= argc || swscanf_s(argv[index], L"%f", &settings.m_decoding.m_AAParam) != 1)
+            {
+                Platform::ReportError("no count specified for multi sample anti aliasing");
+                return false;
+            }
+            if (settings.m_decoding.m_AAParam < 1.0f)
+            {
+                Platform::ReportError("count for multi sample anti aliasing must be at least 1");
+                return false;
+            }
+            ++index;
+        }
 		else if (!_wcsicmp(argv[index], L"-filterbilinear"))
 		{
 			settings.m_decoding.m_textureFilter = ETextureFilter::e_filterBilinear;
@@ -232,6 +248,8 @@ void PrintUsage()
 	Platform::ReportError("    This option will use the specifed <distance> (from 0 - 1) as a distance to\n    smoothstep between black and white at color boundaries.\n    Uses distance from center, not shortest distance from edge.\n");
 	Platform::ReportError("  -aasmoothstepgradient <distance>");
 	Platform::ReportError("    same as -aasmoothstep, but uses distance from edge for better AA\n");
+    Platform::ReportError("  -aams <count>");
+    Platform::ReportError("    takes <count> samples and averages them.  Basically MSAA.\n");
 	Platform::ReportError("Format Options:");
 	Platform::ReportError("  -shortdist");
 	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.\n");
@@ -329,6 +347,21 @@ void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceIma
 int wmain (int argc, wchar_t **argv)
 {
 	
+    /*
+    // TODO: if settings.m_decoding.m_AAMethod == EAAMethod::e_AAMultipleSamples
+    // then need to do multiple passes in decode with small offsets, adding the pixel values together then dividing by sample count
+    // TODO: deterministic (and describable?) sampling pattern.
+    // TOOD: update help and tell them how the sampling count works
+
+    TODO: If AAMS works well, ditch the other anti aliasing methods.
+    TODO: test animated AA too!
+    TODO: make MSAA more efficient
+    TODO: remove using namespace std; everywhere
+    TODO: test with debug options on etc (everything else)
+    TODO: make sure SetPixel is safe (overflow etc)
+    TODO: make a getpixel / setpixel that takes unsigned int for x,y?
+    */
+
 	// ===== FEATURE TODOS =====
 
 	// TODO: make -smoothstepgradient work
