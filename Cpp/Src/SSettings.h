@@ -36,8 +36,7 @@ struct SDecodingSettings
 		, m_height(256)
 		, m_textureFilter(ETextureFilter::e_filterNone)
 		, m_showRadialPixels(false)
-		, m_AAMethod(EAAMethod::e_AANone)
-		, m_AAParam(0.0f)
+        , m_useAA(false)
 	{ }
 
 	wstring			m_srcFile;
@@ -47,8 +46,7 @@ struct SDecodingSettings
 	ETextureFilter	m_textureFilter;
 	wstring			m_debugColorsFile;
 	bool			m_showRadialPixels;
-	EAAMethod		m_AAMethod;
-	float			m_AAParam;
+    bool            m_useAA;
 };
 
 struct SCombineSetings

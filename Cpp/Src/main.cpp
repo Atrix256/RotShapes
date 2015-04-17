@@ -127,52 +127,9 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
 			settings.m_encoding.m_convertedFile = argv[index];
 			++index;
 		}
-		else if (!_wcsicmp(argv[index], L"-aasmoothstep"))
-		{
-			++index;
-			settings.m_decoding.m_AAMethod = EAAMethod::e_AASmoothStep;
-			if (index >= argc || swscanf_s(argv[index],L"%f",&settings.m_decoding.m_AAParam) !=1)
-			{
-				Platform::ReportError("no distance specified for anti aliasing");
-				return false;
-			}
-			if (settings.m_decoding.m_AAParam < 0.0f || settings.m_decoding.m_AAParam > 1.0f)
-			{
-				Platform::ReportError("distance must be between 0 and 1");
-				return false;
-			}
-			++index;
-		}
-		else if (!_wcsicmp(argv[index], L"-aasmoothstepgradient"))
-		{
-			++index;
-			settings.m_decoding.m_AAMethod = EAAMethod::e_AASmoothStepGradient;
-			if (index >= argc || swscanf_s(argv[index], L"%f", &settings.m_decoding.m_AAParam) != 1)
-			{
-				Platform::ReportError("no distance specified for anti aliasing");
-				return false;
-			}
-			if (settings.m_decoding.m_AAParam < 0.0f || settings.m_decoding.m_AAParam > 1.0f)
-			{
-				Platform::ReportError("distance must be between 0 and 1");
-				return false;
-			}
-			++index;
-		}
-        else if (!_wcsicmp(argv[index], L"-aams"))
+        else if (!_wcsicmp(argv[index], L"-aa"))
         {
-            ++index;
-            settings.m_decoding.m_AAMethod = EAAMethod::e_AAMultipleSamples;
-            if (index >= argc || swscanf_s(argv[index], L"%f", &settings.m_decoding.m_AAParam) != 1)
-            {
-                Platform::ReportError("no count specified for multi sample anti aliasing");
-                return false;
-            }
-            if (settings.m_decoding.m_AAParam < 1.0f)
-            {
-                Platform::ReportError("count for multi sample anti aliasing must be at least 1");
-                return false;
-            }
+            settings.m_decoding.m_useAA = true;
             ++index;
         }
 		else if (!_wcsicmp(argv[index], L"-filterbilinear"))
@@ -244,12 +201,8 @@ void PrintUsage()
 	Platform::ReportError("  -animate <destgiffile> <fps> <seconds>");
 	Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    When this option is specified, it makes an animated gif named\n    <destgiffile> of the animation happening over <seconds> seconds at <fps>");
 	Platform::ReportError("    frames per second.  This option also assumes that the decoded filenames have    a %%i in them where you want a frame number, and will output all frames of\n    the animation used to make the gif.\n");
-	Platform::ReportError("  -aasmoothstep <distance>");
-	Platform::ReportError("    This option will use the specifed <distance> (from 0 - 1) as a distance to\n    smoothstep between black and white at color boundaries.\n    Uses distance from center, not shortest distance from edge.\n");
-	Platform::ReportError("  -aasmoothstepgradient <distance>");
-	Platform::ReportError("    same as -aasmoothstep, but uses distance from edge for better AA\n");
-    Platform::ReportError("  -aams <count>");
-    Platform::ReportError("    takes <count> samples and averages them.  Basically MSAA.\n");
+    Platform::ReportError("  -aa");
+    Platform::ReportError("    If specified, will use quincunx super sampled anti aliasing\n");
 	Platform::ReportError("Format Options:");
 	Platform::ReportError("  -shortdist");
 	Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.\n");
@@ -348,18 +301,12 @@ int wmain (int argc, wchar_t **argv)
 {
 	
     /*
-    // TODO: if settings.m_decoding.m_AAMethod == EAAMethod::e_AAMultipleSamples
-    // then need to do multiple passes in decode with small offsets, adding the pixel values together then dividing by sample count
-    // TODO: deterministic (and describable?) sampling pattern.
-    // TOOD: update help and tell them how the sampling count works
-
-    TODO: If AAMS works well, ditch the other anti aliasing methods.
     TODO: test animated AA too!
-    TODO: make MSAA more efficient
     TODO: remove using namespace std; everywhere
     TODO: test with debug options on etc (everything else)
     TODO: make sure SetPixel is safe (overflow etc)
     TODO: make a getpixel / setpixel that takes unsigned int for x,y?
+    TODO: make DecodeInternal() use color constants instead of setting each index individually
     */
 
 	// ===== FEATURE TODOS =====

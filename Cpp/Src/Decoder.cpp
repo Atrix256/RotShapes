@@ -9,28 +9,6 @@
 using namespace std;
 
 //--------------------------------------------------------------------------------------------------------------
-float DistanceFromPointToLine(float AX, float AY, float BX, float BY, float PX, float PY)
-{
-	// given a line defined by A and B, this tells you how far away the point P is from that line
-	// from http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-
-	return abs((BY - AY)*PX - (BX - AX)*PY + BX*AY - BY*AX) /
-			sqrt((BY-AY)*(BY-AY)+(BX-AX)*(BX-AX));
-}
-
-//--------------------------------------------------------------------------------------------------------------
-float SmoothStep (float value, float a, float b)
-{
-	if (value < a)
-		return 0.0f;
-	else if (value > b)
-		return 1.0f;
-
-	float t = (value-a) / (b-a);
-	return 3*t*t-2*t*t*t;
-}
-
-//--------------------------------------------------------------------------------------------------------------
 void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings, float OffsetX, float OffsetY)
 {
 	size_t width = dest.GetWidth();
@@ -44,8 +22,6 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 		: sqrtf(centerX*centerX + centerY*centerY);
 
 	array<float, 4> srcPixel;
-	array<float, 4> srcPixelSlope;  // used for -smoothstepgradient
-	const float h = -0.01f;
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
 	{
@@ -66,12 +42,9 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 			if (settings.m_sqDist)
 				distNorm *= distNorm;
 
-			bool distTooFar = false;
 			if (distNorm >= 1.0f)
-			{
-				distTooFar = true;
 				distNorm = 1.0f;
-			}
+
 			float dist = distNorm*255.0f;
 
 			// get the source (encoded) pixel
@@ -81,21 +54,16 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 				{
 					// add half a pixel to do proper rounding when not using filtering
 					src.GetPixelVanilla(frame, angle+0.5f, srcPixel);
-
-					// assume flat slope when not doing any filtering
-					srcPixelSlope = srcPixel;
 					break;
 				}
 				case ETextureFilter::e_filterBilinear:
 				{
 					src.GetPixelBilinear(frame, angle, srcPixel);
-					src.GetPixelBilinear(frame, angle + h, srcPixelSlope);
 					break;
 				}
 				case ETextureFilter::e_filterSmart:
 				{
 					src.GetPixelSmart(frame, angle, srcPixel);
-					src.GetPixelSmart(frame, angle + h, srcPixelSlope);
 					break;
 				}
 				default:assert(false);
@@ -129,19 +97,9 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 				}
 				else
 				{
-					unsigned char value = 255;
-                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
-					{
-						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
-							? DistanceFromPointToLine(angle, srcPixel[2], angle + h, srcPixelSlope[2], angle, dist)
-							: dist - srcPixel[2];
-
-						value = (unsigned char)(255.0f*SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f));
-					}
-						
-					pixel[2] = value;
-					pixel[1] = value;
-					pixel[0] = value;
+                    pixel[2] = 255;
+					pixel[1] = 255;
+					pixel[0] = 255;
 				}
 			}
 			else if (dist < srcPixel[0])
@@ -154,19 +112,9 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 				}
 				else
 				{
-					unsigned char value = 0;
-                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
-					{
-						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
-							? DistanceFromPointToLine(angle, srcPixel[1], angle + h, srcPixelSlope[1], angle, dist)
-							: dist - srcPixel[1];
-
-						value = (unsigned char)(255.0f*(1.0f - SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f)));
-					}
-
-					pixel[2] = value;
-					pixel[1] = value;
-					pixel[0] = value;
+					pixel[2] = 0;
+					pixel[1] = 0;
+					pixel[0] = 0;
 				}
 			}
 			else if (dist < srcPixel[3])
@@ -179,19 +127,9 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 				}
 				else
 				{
-					unsigned char value = 255;
-                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
-					{
-						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
-							? DistanceFromPointToLine(angle, srcPixel[0], angle + h, srcPixelSlope[0], angle, dist)
-							: dist - srcPixel[0];
-
-						value = (unsigned char)(255.0f*SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f));
-					}
-
-					pixel[2] = value;
-					pixel[1] = value;
-					pixel[0] = value;
+					pixel[2] = 255;
+					pixel[1] = 255;
+					pixel[0] = 255;
 				}
 			}
 			else
@@ -204,19 +142,9 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 				}
 				else
 				{
-					unsigned char value = 0;
-                    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AANone && settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples)
-					{
-						float distance = (settings.m_decoding.m_AAMethod == EAAMethod::e_AASmoothStepGradient)
-							? DistanceFromPointToLine(angle, srcPixel[3], angle + h, srcPixelSlope[3], angle, dist)
-							: dist - srcPixel[3];
-
-						value = (unsigned char)(255.0f*(1.0f - SmoothStep(distance, 0, settings.m_decoding.m_AAParam*255.0f)));
-					}
-
-					pixel[2] = value;
-					pixel[1] = value;
-					pixel[0] = value;
+					pixel[2] = 0;
+					pixel[1] = 0;
+					pixel[0] = 0;
 				}
 			}
 
@@ -253,75 +181,66 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 //--------------------------------------------------------------------------------------------------------------
 void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
 {
-    // if not doing MSAA, do a decode and bail out
-    if (settings.m_decoding.m_AAMethod != EAAMethod::e_AAMultipleSamples || (int)settings.m_decoding.m_AAParam == 1)
-    {
-        DecodeInternal(src, frame, dest, debugColors, settings, 0.0f, 0.0f);
-        return;
-    }
+    // decode the frame
+    DecodeInternal(src, frame, dest, debugColors, settings, 0.0f, 0.0f);
 
-    // else we are doing MSAA so make it happen.
+    // if not doing AA, we are done!
+    if (!settings.m_decoding.m_useAA)
+        return;
+
+    // if we are doing AA, we are doing supersampling with a quincunx pattern, so we need to decode again
+    // with half a pixel offset.
 
     // allocate pixels for all our samples
-    std::vector<CImageDataRGBA> samples;
-    samples.resize((int)settings.m_decoding.m_AAParam);
-    std::for_each(samples.begin(), samples.end(),
-        [&](CImageDataRGBA& sample)
-        {
-            sample.AllocatePixels(dest.GetWidth(), dest.GetHeight());
-        }
-    );
+    CImageDataRGBA destOffset;
+    destOffset.AllocatePixels(dest.GetWidth(), dest.GetHeight());
+    DecodeInternal(src, frame, destOffset, debugColors, settings, 0.5f, 0.5f);
 
-    // decode all the samples
-    for (size_t i = 0, c = samples.size(); i < c; ++i)
-    {
-        float offsetX;
-        float offsetY;
-
-        const float c_offset = 0.5f;
-
-        if (i == 0)
-        {
-            offsetX = 0.0f;
-            offsetY = 0.0f;
-        }
-        else
-        {
-            if (i == 1 || i == 3)
-                offsetX = -c_offset;
-            else
-                offsetX = c_offset;
-
-            if (i == 1 || i == 2)
-                offsetY = -c_offset;
-            else
-                offsetY = c_offset;
-        }
-
-        DecodeInternal(src, frame, samples[i], debugColors, settings, offsetX, offsetY);
-    }
-
-    // average the result into dest
+    // now, we need to combine the data from the two buffers quincunx style
     for (size_t y = 0, yc = dest.GetHeight(); y < yc; ++y)
     {
         for (size_t x = 0, xc = dest.GetWidth(); x < xc; ++x)
         {
-            array<float, 4> pixelAvg = { 0.0f, 0.0f, 0.0f, 0.0f };
-            for (size_t i = 0, c = samples.size(); i < c; ++i)
-            {
-                array<float, 4> pixel;
-                samples[i].GetPixel((float)x, (float)y, pixel);
-                pixelAvg[0] += pixel[0];
-                pixelAvg[1] += pixel[1];
-                pixelAvg[2] += pixel[2];
-                pixelAvg[3] += pixel[3];
-            }
-            pixelAvg[0] /= (float)samples.size();
-            pixelAvg[1] /= (float)samples.size();
-            pixelAvg[2] /= (float)samples.size();
-            pixelAvg[3] /= (float)samples.size();
+            // get the center pixel
+            array<float, 4> centerPixel;
+            dest.GetPixel((float)x, (float)y, centerPixel);
 
-            dest.SetPixel((float)x, (float)y, pixelAvg);
+            // get the corner pixels
+            array<array<float, 4>,4> cornerPixels;
+            if (x > 0)
+                destOffset.GetPixel((float)x - 1, (float)y, cornerPixels[0]);
+            else
+                cornerPixels[0] = centerPixel;
+
+            if (y > 0)
+                destOffset.GetPixel((float)x, (float)y - 1, cornerPixels[1]);
+            else
+                cornerPixels[1] = centerPixel;
+
+            if (x > 0 && y > 0)
+                destOffset.GetPixel((float)x - 1, (float)y - 1, cornerPixels[2]);
+            else
+                cornerPixels[2] = centerPixel;
+
+            destOffset.GetPixel((float)x, (float)y, cornerPixels[3]);
+
+            // combine the center and corner pixels
+            array<float, 4> blendedPixel;
+            for (size_t i = 0; i < 4; ++i)
+            {
+                blendedPixel[i] = centerPixel[i] * 0.5f;
+                std::for_each(
+                    cornerPixels.begin(),
+                    cornerPixels.end(),
+                    [&](const array<float, 4>& cornerPixel)
+                    {
+                        blendedPixel[i] += cornerPixel[i] / 8.0f;
+                    }
+                );
+            }
+
+            //write the combined pixel out
+            dest.SetPixel((float)x, (float)y, blendedPixel);
         }
     }
 }
