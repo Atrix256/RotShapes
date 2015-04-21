@@ -301,29 +301,15 @@ int wmain (int argc, wchar_t **argv)
 {
 	
     /*
-    TODO: test animated AA too!
-    TODO: test with debug options on etc (everything else)
     TODO: make sure SetPixel is safe (overflow etc)
     TODO: make a getpixel / setpixel that takes unsigned int for x,y?
-    TODO: make DecodeInternal() use color constants instead of setting each index individually
     */
 
 	// ===== FEATURE TODOS =====
 
-	// TODO: make -smoothstepgradient work
-	//  * do distance from point (pixel) to line (defined by tangent at pixel angle). can work in polar space, that ought to be fine, so it's linear!
-	//   * actually, tangent at pixel angle may not be appropriate. need to think about it or test it out.  Larger distances would make it less accurate but maybe its ok.
-	// TODO: finish this stuff! test with all AA options to make sure everything is still happy!
-	// TODO: probably need pixel samplers to return slope info.  w/ smart we are hitting the problems that smoothstep has at boundaries.
-
-	// TODO: smart filter work: when discontiuous, try other channel?
 	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
 
 	// TODO: expose smart filter threshold as a parameter
-
-	// TODO: look through all files for todos
-	// TODO: instead of always using ReportError() maybe have some other function for non errors
-	
 
 	
 	// ===== MAYBE FEATURES
@@ -337,11 +323,9 @@ int wmain (int argc, wchar_t **argv)
 	// ===== PROGRAM TODOS =====
 	// TODO: distance seems to round up from left corner.  should round based on center i think
 	// TODO: make asserts happen in release too!
-	// TODO: print out encoding and decoding options while we do the work
 	// TODO: make it so we can use all the threads again
 	// TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
 	// TODO: force the encoded image (and other images?) to always be png extension and type somehow? (and gif for animated files)
-	// TODO: make errors stick out more. too much noise, cant see the errors. maybe save them til the end?
 
 	// show usage if we aren't given enough command line options
 	if (argc <= 1)
