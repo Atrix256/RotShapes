@@ -3,8 +3,6 @@
 #include <array>
 #include <math.h>
 
-using namespace std;
-
 class CImageDataRGBA
 {
 public:
@@ -57,7 +55,7 @@ public:
 	//--------------------------------------------------------------------------------------------------------------
 	// PIXEL READS : get a float[4] with values 0.0f-255.0f
 	//--------------------------------------------------------------------------------------------------------------
-	void GetPixel (float x, float y, array<float, 4>& pixel) const
+	void GetPixel (float x, float y, std::array<float, 4>& pixel) const
 	{
 		// mod x,y by width, height to do wrap texture mode
 		size_t xx = (size_t)x;
@@ -70,7 +68,7 @@ public:
 	}
 
 	template <typename FILTERX, typename FILTERY>
-	void GetPixelFiltered(float x, float y, array<float, 4>& pixel, const FILTERX& filterX, const FILTERY& filterY) const
+    void GetPixelFiltered(float x, float y, std::array<float, 4>& pixel, const FILTERX& filterX, const FILTERY& filterY) const
 	{
 		float y1 = floor(y);
 		float x1 = floor(x);
@@ -78,20 +76,20 @@ public:
 		float fractY = y - y1;
 
 		// blend the left pixel
-		array<float, 4> left;
+        std::array<float, 4> left;
 		{
-			array<float, 4> p1;
-			array<float, 4> p2;
+            std::array<float, 4> p1;
+            std::array<float, 4> p2;
 			GetPixel(x1, y1, p1);
 			GetPixel(x1, y1 + 1, p2);
 			filterY(p2, p1, left, fractY);
 		}
 
 		// blend the right pixel
-		array<float, 4> right;
+        std::array<float, 4> right;
 		{
-			array<float, 4> p1;
-			array<float, 4> p2;
+            std::array<float, 4> p1;
+            std::array<float, 4> p2;
 			GetPixel(x1 + 1, y1, p1);
 			GetPixel(x1 + 1, y1 + 1, p2);
 			filterY(p2, p1, right, fractY);
@@ -101,22 +99,22 @@ public:
 		filterX(right, left, pixel, fractX);
 	}
 
-	void GetPixelVanilla(float x, float y, array<float, 4>& pixel) const
+    void GetPixelVanilla(float x, float y, std::array<float, 4>& pixel) const
 	{
 		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendNone);
 	}
 
-	void GetPixelBilinear (float x, float y, array<float, 4>& pixel) const
+    void GetPixelBilinear(float x, float y, std::array<float, 4>& pixel) const
 	{
 		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendLinear);
 	}
 
-	void GetPixelSmart (float x, float y, array<float, 4>& pixel) const
+    void GetPixelSmart(float x, float y, std::array<float, 4>& pixel) const
 	{
 		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendSmart);
 	}
 	
-	static void PixelBlendSmart (const array<float, 4>& a, const array<float, 4>& b, array<float, 4>& c, float weight)
+    static void PixelBlendSmart(const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
 	{
 		for (int i = 0; i < a._EEN_SIZE; ++i)
 		{
@@ -133,7 +131,7 @@ public:
 		}
 	}
 
-	static void PixelBlendLinear (const array<float, 4>& a, const array<float, 4>& b, array<float, 4>& c, float weight)
+    static void PixelBlendLinear(const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
 	{
 		for (int i = 0; i < a._EEN_SIZE; ++i)
 		{
@@ -141,7 +139,7 @@ public:
 		}
 	}
 
-	static void PixelBlendNone(const array<float, 4>& a, const array<float, 4>& b, array<float, 4>& c, float weight)
+    static void PixelBlendNone(const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
 	{
 		c = weight > 0.5f ? a : b;
 	}
@@ -149,7 +147,7 @@ public:
 	//--------------------------------------------------------------------------------------------------------------
 	// PIXEL WRITES: unsigned int 0xAARRGGBB
 	//--------------------------------------------------------------------------------------------------------------
-    void SetPixel(float x, float y, array<float, 4>& pixel) const
+    void SetPixel(float x, float y, std::array<float, 4>& pixel) const
     {
         // mod x,y by width, height to do wrap texture mode
         size_t xx = (size_t)x;
@@ -205,14 +203,14 @@ public:
 	{
 		unsigned int drawWidth = GetWidth() - x;
 		unsigned int drawHeight = GetHeight() - y;
-		drawWidth = min(drawWidth, src.GetWidth());
-		drawHeight = min(drawHeight, src.GetHeight());
+        drawWidth = std::min(drawWidth, src.GetWidth());
+        drawHeight = std::min(drawHeight, src.GetHeight());
 
 		for (unsigned int iy = 0; iy < drawHeight; ++iy)
 		{
 			for (unsigned int ix = 0; ix < drawWidth; ++ix)
 			{
-				array<float, 4> srcPixel;
+                std::array<float, 4> srcPixel;
 				src.GetPixel((float)ix, (float)iy, srcPixel);
 
 				unsigned int destPixel =

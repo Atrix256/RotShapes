@@ -227,11 +227,11 @@ void DoDecode (const SSettings& settings, const CImageDataRGBA& sourceImageData,
 		else
 			tilesY++;
 	}
-	const wstring& outFile = debugColors ? settings.m_decoding.m_debugColorsFile : settings.m_decoding.m_destFile;
+    const std::wstring& outFile = debugColors ? settings.m_decoding.m_debugColorsFile : settings.m_decoding.m_destFile;
 
 	// decode each frame to a destination image
 	CImageDataRGBA decodedImageData;
-	vector<CImageDataRGBA> decodedFrames;
+    std::vector<CImageDataRGBA> decodedFrames;
 	decodedFrames.resize(numFrames);
 	for (unsigned int i = 0; i < numFrames; ++i)
 		decodedFrames[i].AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
@@ -261,10 +261,10 @@ void DoDecodeAnimate (const SSettings& settings, const CImageDataRGBA& sourceIma
 	// for the case of multiple frames in the encoded image, and decoding it as a sheet, figure out
 	// how many images wide and high (in a square) we are going to decode.
 	unsigned int numFrames = (unsigned int)((float)settings.m_animate.m_fps * settings.m_animate.m_seconds);
-	const wstring& outFile = debugColors ? settings.m_decoding.m_debugColorsFile : settings.m_decoding.m_destFile;
+    const std::wstring& outFile = debugColors ? settings.m_decoding.m_debugColorsFile : settings.m_decoding.m_destFile;
 
 	// decode each frame
-	vector<CImageDataRGBA> decodedFrames;
+    std::vector<CImageDataRGBA> decodedFrames;
 	decodedFrames.resize(numFrames);
 	for (unsigned int i = 0; i < numFrames; ++i)
 		decodedFrames[i].AllocatePixels(settings.m_decoding.m_width,settings.m_decoding.m_height);
@@ -302,7 +302,6 @@ int wmain (int argc, wchar_t **argv)
 	
     /*
     TODO: test animated AA too!
-    TODO: remove using namespace std; everywhere
     TODO: test with debug options on etc (everything else)
     TODO: make sure SetPixel is safe (overflow etc)
     TODO: make a getpixel / setpixel that takes unsigned int for x,y?

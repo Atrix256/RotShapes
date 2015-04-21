@@ -6,8 +6,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-using namespace std;
-
 //--------------------------------------------------------------------------------------------------------------
 void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings, float OffsetX, float OffsetY)
 {
@@ -18,10 +16,10 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 	const float centerX = (float)width / 2.0f;
 	const float centerY = (float)height / 2.0f;
 	const float maxDist = settings.m_shortDist
-		? (float)max(width, height)/2.0f
+        ? (float)std::max(width, height) / 2.0f
 		: sqrtf(centerX*centerX + centerY*centerY);
 
-	array<float, 4> srcPixel;
+    std::array<float, 4> srcPixel;
 	unsigned char* pixels = dest.GetPixelBuffer();
 	for (size_t iy = 0; iy < height; ++iy)
 	{
@@ -202,11 +200,11 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
         for (size_t x = 0, xc = dest.GetWidth(); x < xc; ++x)
         {
             // get the center pixel
-            array<float, 4> centerPixel;
+            std::array<float, 4> centerPixel;
             dest.GetPixel((float)x, (float)y, centerPixel);
 
             // get the corner pixels
-            array<array<float, 4>,4> cornerPixels;
+            std::array<std::array<float, 4>, 4> cornerPixels;
             if (x > 0)
                 destOffset.GetPixel((float)x - 1, (float)y, cornerPixels[0]);
             else
@@ -225,14 +223,14 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
             destOffset.GetPixel((float)x, (float)y, cornerPixels[3]);
 
             // combine the center and corner pixels
-            array<float, 4> blendedPixel;
+            std::array<float, 4> blendedPixel;
             for (size_t i = 0; i < 4; ++i)
             {
                 blendedPixel[i] = centerPixel[i] * 0.5f;
                 std::for_each(
                     cornerPixels.begin(),
                     cornerPixels.end(),
-                    [&](const array<float, 4>& cornerPixel)
+                    [&](const std::array<float, 4>& cornerPixel)
                     {
                         blendedPixel[i] += cornerPixel[i] / 8.0f;
                     }

@@ -10,8 +10,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-using namespace std;
-
 //--------------------------------------------------------------------------------------------------------------
 struct SVector2
 {
@@ -35,8 +33,8 @@ static float TriArea (const SVector2& A, const SVector2& B, const SVector2& C)
 //--------------------------------------------------------------------------------------------------------------
 struct SThreadData
 {
-	vector<SVector2>	m_polygon;
-	vector<SVector2>	m_polygonTemp;
+    std::vector<SVector2>	m_polygon;
+    std::vector<SVector2>	m_polygonTemp;
 };
 
 //--------------------------------------------------------------------------------------------------------------
@@ -54,7 +52,7 @@ public:
 		, c_centerY((float)src.GetHeight() / 2.0f)
 		, c_maxX(src.GetWidth()-1.0f)
 		, c_maxY(src.GetHeight()-1.0f)
-		, c_maxDist(settings.m_shortDist ? (float)max(src.GetWidth(),src.GetHeight())/2.0f : sqrtf(c_centerX*c_centerX+c_centerY*c_centerY))
+        , c_maxDist(settings.m_shortDist ? (float)std::max(src.GetWidth(), src.GetHeight()) / 2.0f : sqrtf(c_centerX*c_centerX + c_centerY*c_centerY))
 		, c_arcSizeRadians(((float)M_PI*2.0f)/((float)c_angleCount))
 		, c_halfArcSizeRadians(((float)M_PI)/((float)c_angleCount))
 		, m_radialPixels(c_radialPixelCount)
@@ -64,31 +62,31 @@ public:
         assert(dest.GetWidth() == 1);
     }
 
-	typedef vector<bool>			TRadialPixels;
-	typedef vector<unsigned char>	TAngleRange;
-	typedef vector<TAngleRange>		TAngleRanges;
+    typedef std::vector<bool>			TRadialPixels;
+    typedef std::vector<unsigned char>	TAngleRange;
+    typedef std::vector<TAngleRange>		TAngleRanges;
 
 	//----------------------------------------------------------------------------------------------------------
     bool Encode ()
 	{
 		// make a thread slot for each core we have available, making sure to at least have 1 thread.
 		// also create a threaddata object per thread
-		auto numThreads = thread::hardware_concurrency();
+        auto numThreads = std::thread::hardware_concurrency();
 		numThreads = 1;//max(numThreads, static_cast<decltype(numThreads)>(1));
-		vector<thread> threads(numThreads);
+        std::vector<std::thread> threads(numThreads);
 		m_threadData.resize(numThreads);
 		Platform::ReportError("Encoding with %i threads", numThreads);		
 
 		// Calculate our radial pixels using as many threads as we have cores for and wait for them to finish
 		for (size_t i = 0, c = threads.size(); i < c; ++i)
-			threads[i] = thread([this,i] () { CalcRadialPixelsMT(m_threadData[i]); });
-		for_each(threads.begin(), threads.end(), [] (thread& t) { t.join(); });
+            threads[i] = std::thread([this, i]() { CalcRadialPixelsMT(m_threadData[i]); });
+        for_each(threads.begin(), threads.end(), [](std::thread& t) { t.join(); });
 
 		// we now have the color of each radial pixel, we need to use those to make black/white distances for
 		// each angle, so that we can encode those distances as R,G,B,A
 		for (size_t i = 0, c = threads.size(); i < c; ++i)
-			threads[i] = thread([this] () { CalcAngleRangesMT(); });
-		for_each(threads.begin(), threads.end(), [] (thread& t) { t.join(); });
+            threads[i] = std::thread([this]() { CalcAngleRangesMT(); });
+        for_each(threads.begin(), threads.end(), [](std::thread& t) { t.join(); });
 
 		// image format is BGRA (defined in Platform::SaveImageFile() by necesity), but we want to encode
 		// distances RGBA, so we flip the [2] and [0] index
@@ -234,16 +232,16 @@ private:
 	float CalcTriangleOverlapMT (SThreadData& threadData, float AX, float AY, float BX, float BY, float CX, float CY)
 	{
 		// get our bounding box to be able to know which pixels we need to test this triangle against
-		float minX = floor(min(AX,min(BX,CX)));
-		float minY = floor(min(AY,min(BY,CY)));
-		float maxX = floor(max(AX,max(BX,CX)))+1.0f;
-		float maxY = floor(max(AY,max(BY,CY)))+1.0f;
+        float minX = floor(std::min(AX, std::min(BX, CX)));
+        float minY = floor(std::min(AY, std::min(BY, CY)));
+        float maxX = floor(std::max(AX, std::max(BX, CX))) + 1.0f;
+        float maxY = floor(std::max(AY, std::max(BY, CY))) + 1.0f;
 
 		// clip the bounding box to the source image dimensions
-		minX = max(minX, 0.0f);
-		minY = max(minY, 0.0f);
-		maxX = min(maxX, c_maxX);
-		maxY = min(maxY, c_maxY);
+        minX = std::max(minX, 0.0f);
+        minY = std::max(minY, 0.0f);
+        maxX = std::min(maxX, c_maxX);
+        maxY = std::min(maxY, c_maxY);
 
 		// for each pixel in the bounding box
 		int sx = (int)minX;
@@ -251,7 +249,7 @@ private:
 		int ex = (int)maxX;
 		int ey = (int)maxY;
 		float triangleTotal = 0.0f;
-		array<float, 4> pixelData;
+        std::array<float, 4> pixelData;
 		for (int iy = sy; iy <= ey; ++iy)
 		{
 			for (int ix = sx; ix <= ex; ++ix)
@@ -444,8 +442,8 @@ private:
     CImageDataRGBA&			m_dest;
 	const SSettings&		m_settings;
 
-	atomic<size_t> m_nextPixel;
-	atomic<size_t> m_nextAngle;
+    std::atomic<size_t> m_nextPixel;
+    std::atomic<size_t> m_nextAngle;
 
 	// some constants sharable across threads
 	const size_t c_radialPixelCount;
@@ -463,7 +461,7 @@ private:
 	// members that rely on constant initialization
 	TRadialPixels		m_radialPixels;
 	TAngleRanges		m_angleRanges;
-	vector<SThreadData>	m_threadData;
+    std::vector<SThreadData>	m_threadData;
 };
 
 //--------------------------------------------------------------------------------------------------------------

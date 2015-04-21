@@ -1,7 +1,5 @@
 #include <string>
 
-using namespace std;
-
 enum class ETextureFilter
 {
 	e_filterNone,
@@ -23,10 +21,10 @@ struct SEncodingSettings
 		: m_angles(256)
 	{ }
 
-	wstring	m_srcFile;
-	wstring	m_destFile;
-	size_t	m_angles;
-	wstring	m_convertedFile;
+    std::wstring	m_srcFile;
+    std::wstring	m_destFile;
+	size_t	        m_angles;
+    std::wstring	m_convertedFile;
 };
 
 struct SDecodingSettings
@@ -39,21 +37,21 @@ struct SDecodingSettings
         , m_useAA(false)
 	{ }
 
-	wstring			m_srcFile;
-	wstring			m_destFile;
+    std::wstring	m_srcFile;
+    std::wstring	m_destFile;
 	size_t			m_width;
 	size_t			m_height;
 	ETextureFilter	m_textureFilter;
-	wstring			m_debugColorsFile;
+    std::wstring	m_debugColorsFile;
 	bool			m_showRadialPixels;
     bool            m_useAA;
 };
 
 struct SCombineSetings
 {
-	wstring			m_srcFileA;
-	wstring			m_srcFileB;
-	wstring			m_destFile;
+    std::wstring	m_srcFileA;
+    std::wstring	m_srcFileB;
+    std::wstring	m_destFile;
 };
 
 struct SAnimateSettings
@@ -64,7 +62,7 @@ struct SAnimateSettings
 		, m_animate(false)
 	{ }
 
-	wstring			m_destGifFile;
+    std::wstring	m_destGifFile;
 	bool			m_animate;
 	unsigned int	m_fps;
 	float			m_seconds;
