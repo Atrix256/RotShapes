@@ -486,12 +486,12 @@ namespace Platform
 
 				// copy the pixels
 				BYTE *convertedData = new BYTE[frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight()];
-				for (int iy = 0, iyc = frames[frameIndex].GetHeight(); iy < iyc; ++iy)
+				for (size_t iy = 0, iyc = frames[frameIndex].GetHeight(); iy < iyc; ++iy)
 				{
-					for (int ix = 0, ixc = frames[frameIndex].GetWidth(); ix < ixc; ++ix)
+                    for (size_t ix = 0, ixc = frames[frameIndex].GetWidth(); ix < ixc; ++ix)
 					{
 						std::array<float, 4> pixel;
-						frames[frameIndex].GetPixel((float)ix, (float)iy, pixel);
+						frames[frameIndex].GetPixel(ix, iy, pixel);
 						//convertedData[iy*ixc + ix] = pixel[0] > 0.5f ? 1 : 0;
 						convertedData[iy*ixc + ix] = (BYTE)pixel[0];
 					}

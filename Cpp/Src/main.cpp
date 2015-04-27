@@ -301,21 +301,27 @@ int wmain (int argc, wchar_t **argv)
 {
 	
     /*
-    TODO: make sure SetPixel is safe (overflow etc)
-    TODO: make a getpixel / setpixel that takes unsigned int for x,y?
-    */
-
 	// ===== FEATURE TODOS =====
 
-	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter!
+    ! next most major feature remaining = blending between pie slices when we should, and not when we shouldn't.
+     * could maybe have two modes of operation. One = like it is (heuristic per image?).  Other = 2 pixels per cone.
+
+    ? how to deal with the artefacts like the batman thing where there's a stray black part hanging out? maybe an issue in encoding that has since been cleared up? try re-encoding maybe?
+
+    * make a version that uses 2 pixels per cone, or uses one less channel for color, to have the "smart blend" threshold info be baked in or something?
+    * or, maybe have 1 extra pixel to have tolarance info somehow?
+    * both of these result in more pixel reads though ):
+    ? maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
+
+	// TODO: work on smart filtering more, possibly expose threshold as a command line parameter?
 
 	// TODO: expose smart filter threshold as a parameter
+
 
 	
 	// ===== MAYBE FEATURES
 	// TODO: option for a single 32 bit distance for encoding & decoding!
-	// TODO: Layering and color tint?
-	// maybe try to do some curve fitting between the pixels? like grab the last pixel and the next pixel and curve fit? (while throwing out data that is too far!)
+	// TODO: Layering and color tint decoding? for demos
 	// TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
 	// maybe try one of the averages (like, geometric, or something)
 	// TODO: try maybe doing some curve fitting with smart filter if the current smart filter doesn't work out
@@ -326,6 +332,8 @@ int wmain (int argc, wchar_t **argv)
 	// TODO: make it so we can use all the threads again
 	// TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
 	// TODO: force the encoded image (and other images?) to always be png extension and type somehow? (and gif for animated files)
+
+    */
 
 	// show usage if we aren't given enough command line options
 	if (argc <= 1)

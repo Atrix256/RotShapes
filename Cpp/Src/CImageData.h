@@ -6,10 +6,10 @@
 class CImageDataRGBA
 {
 public:
-    CImageDataRGBA () : m_pixels(0), m_width(0), m_height(0), m_stride(0) { }
+    CImageDataRGBA() : m_pixels(0), m_width(0), m_height(0), m_stride(0) { }
     ~CImageDataRGBA() { Clear(); }
 
-    void Clear ()
+    void Clear()
     {
         if (m_pixels)
         {
@@ -23,7 +23,7 @@ public:
     }
 
     // this function takes ownership over the pixels memory and is responsible for freeing it
-    void SetPixels (unsigned int width, unsigned int height, unsigned int stride, unsigned char *pixels)
+    void SetPixels(unsigned int width, unsigned int height, unsigned int stride, unsigned char *pixels)
     {
         Clear();
         m_pixels = pixels;
@@ -32,7 +32,7 @@ public:
         m_stride = stride;
     }
 
-    void AllocatePixels (unsigned int width, unsigned int height)
+    void AllocatePixels(unsigned int width, unsigned int height)
     {
         Clear();
         m_width = width;
@@ -45,16 +45,21 @@ public:
         memset(m_pixels, 0, m_stride*m_height);
     }
 
-    unsigned int GetWidth () const { return m_width; }
-    unsigned int GetHeight () const { return m_height; }
-    unsigned int GetStride () const { return m_stride; }
+    unsigned int GetWidth() const { return m_width; }
+    unsigned int GetHeight() const { return m_height; }
+    unsigned int GetStride() const { return m_stride; }
 
-    unsigned int GetPixelBufferSize () const { return GetStride() * GetHeight(); }
-    unsigned char* GetPixelBuffer () const { return m_pixels; }
+    unsigned int GetPixelBufferSize() const { return GetStride() * GetHeight(); }
+    unsigned char* GetPixelBuffer() const { return m_pixels; }
 
-	//--------------------------------------------------------------------------------------------------------------
-	// PIXEL READS : get a float[4] with values 0.0f-255.0f
-	//--------------------------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------------
+    // PIXEL READS : get a float[4] with values 0.0f-255.0f
+    //--------------------------------------------------------------------------------------------------------------
+    void GetPixel (size_t x, size_t y, std::array<float, 4>& pixel) const
+    {
+        return GetPixel((float)x, (float)y, pixel);
+    }
+
 	void GetPixel (float x, float y, std::array<float, 4>& pixel) const
 	{
 		// mod x,y by width, height to do wrap texture mode
@@ -68,7 +73,7 @@ public:
 	}
 
 	template <typename FILTERX, typename FILTERY>
-    void GetPixelFiltered(float x, float y, std::array<float, 4>& pixel, const FILTERX& filterX, const FILTERY& filterY) const
+    void GetPixelFiltered (float x, float y, std::array<float, 4>& pixel, const FILTERX& filterX, const FILTERY& filterY) const
 	{
 		float y1 = floor(y);
 		float x1 = floor(x);
@@ -99,22 +104,22 @@ public:
 		filterX(right, left, pixel, fractX);
 	}
 
-    void GetPixelVanilla(float x, float y, std::array<float, 4>& pixel) const
+    void GetPixelVanilla (float x, float y, std::array<float, 4>& pixel) const
 	{
 		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendNone);
 	}
 
-    void GetPixelBilinear(float x, float y, std::array<float, 4>& pixel) const
+    void GetPixelBilinear (float x, float y, std::array<float, 4>& pixel) const
 	{
 		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendLinear);
 	}
 
-    void GetPixelSmart(float x, float y, std::array<float, 4>& pixel) const
+    void GetPixelSmart (float x, float y, std::array<float, 4>& pixel) const
 	{
 		GetPixelFiltered(x, y, pixel, PixelBlendLinear, PixelBlendSmart);
 	}
 	
-    static void PixelBlendSmart(const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
+    static void PixelBlendSmart (const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
 	{
 		for (int i = 0; i < a._EEN_SIZE; ++i)
 		{
@@ -131,7 +136,7 @@ public:
 		}
 	}
 
-    static void PixelBlendLinear(const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
+    static void PixelBlendLinear (const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
 	{
 		for (int i = 0; i < a._EEN_SIZE; ++i)
 		{
@@ -139,7 +144,7 @@ public:
 		}
 	}
 
-    static void PixelBlendNone(const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
+    static void PixelBlendNone (const std::array<float, 4>& a, const std::array<float, 4>& b, std::array<float, 4>& c, float weight)
 	{
 		c = weight > 0.5f ? a : b;
 	}
@@ -147,12 +152,16 @@ public:
 	//--------------------------------------------------------------------------------------------------------------
 	// PIXEL WRITES: unsigned int 0xAARRGGBB
 	//--------------------------------------------------------------------------------------------------------------
-    void SetPixel(float x, float y, std::array<float, 4>& pixel) const
+
+    void SetPixel (float x, float y, std::array<float, 4>& pixel) const
+    {
+        SetPixel((size_t)x, (size_t)y, pixel);
+    }
+
+    void SetPixel (size_t x, size_t y, std::array<float, 4>& pixel) const
     {
         // mod x,y by width, height to do wrap texture mode
-        size_t xx = (size_t)x;
-        size_t yy = (size_t)y;
-        unsigned char *pixelPointer = GetPixelBuffer() + (yy%GetHeight()) * GetStride() + (xx%GetWidth()) * 4;
+        unsigned char *pixelPointer = GetPixelBuffer() + (y%GetHeight()) * GetStride() + (y%GetWidth()) * 4;
         pixelPointer[0] = (unsigned char)pixel[0];
         pixelPointer[1] = (unsigned char)pixel[1];
         pixelPointer[2] = (unsigned char)pixel[2];
@@ -211,7 +220,7 @@ public:
 			for (unsigned int ix = 0; ix < drawWidth; ++ix)
 			{
                 std::array<float, 4> srcPixel;
-				src.GetPixel((float)ix, (float)iy, srcPixel);
+				src.GetPixel(ix, iy, srcPixel);
 
 				unsigned int destPixel =
 					((unsigned int)srcPixel[3]) << 24 |

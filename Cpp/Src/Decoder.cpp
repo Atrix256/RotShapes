@@ -201,26 +201,26 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
         {
             // get the center pixel
             std::array<float, 4> centerPixel;
-            dest.GetPixel((float)x, (float)y, centerPixel);
+            dest.GetPixel(x, y, centerPixel);
 
             // get the corner pixels
             std::array<std::array<float, 4>, 4> cornerPixels;
             if (x > 0)
-                destOffset.GetPixel((float)x - 1, (float)y, cornerPixels[0]);
+                destOffset.GetPixel(x - 1, y, cornerPixels[0]);
             else
                 cornerPixels[0] = centerPixel;
 
             if (y > 0)
-                destOffset.GetPixel((float)x, (float)y - 1, cornerPixels[1]);
+                destOffset.GetPixel(x, y - 1, cornerPixels[1]);
             else
                 cornerPixels[1] = centerPixel;
 
             if (x > 0 && y > 0)
-                destOffset.GetPixel((float)x - 1, (float)y - 1, cornerPixels[2]);
+                destOffset.GetPixel(x - 1, y - 1, cornerPixels[2]);
             else
                 cornerPixels[2] = centerPixel;
 
-            destOffset.GetPixel((float)x, (float)y, cornerPixels[3]);
+            destOffset.GetPixel(x, y, cornerPixels[3]);
 
             // combine the center and corner pixels
             std::array<float, 4> blendedPixel;
@@ -238,7 +238,7 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
             }
 
             //write the combined pixel out
-            dest.SetPixel((float)x, (float)y, blendedPixel);
+            dest.SetPixel(x, y, blendedPixel);
         }
     }
 }

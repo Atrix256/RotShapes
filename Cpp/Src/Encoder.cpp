@@ -244,15 +244,15 @@ private:
         maxY = std::min(maxY, c_maxY);
 
 		// for each pixel in the bounding box
-		int sx = (int)minX;
-		int sy = (int)minY;
-		int ex = (int)maxX;
-		int ey = (int)maxY;
+        size_t sx = (size_t)minX;
+        size_t sy = (size_t)minY;
+        size_t ex = (size_t)maxX;
+        size_t ey = (size_t)maxY;
 		float triangleTotal = 0.0f;
         std::array<float, 4> pixelData;
-		for (int iy = sy; iy <= ey; ++iy)
+		for (size_t iy = sy; iy <= ey; ++iy)
 		{
-			for (int ix = sx; ix <= ex; ++ix)
+            for (size_t ix = sx; ix <= ex; ++ix)
 			{
 				// make the source polygon
 				//SThreadData threadData;
@@ -326,7 +326,7 @@ private:
 				}
 
 				// black pixels subtract from the total, white pixels add into the total
-				m_src.GetPixel((float)ix, (float)iy, pixelData);
+				m_src.GetPixel(ix, iy, pixelData);
 				float multiplier =  pixelData[0] > 0 ? 1.0f : -1.0f;
 
 				// add area of polygon into triangleTotal, using ear clipping.  The polygon is garaunteed convex since it's

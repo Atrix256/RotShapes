@@ -7,14 +7,6 @@ enum class ETextureFilter
 	e_filterSmart
 };
 
-enum class EAAMethod
-{
-	e_AANone,
-	e_AASmoothStep,
-	e_AASmoothStepGradient,
-    e_AAMultipleSamples  // MSAA
-};
-
 struct SEncodingSettings
 {
 	SEncodingSettings()
