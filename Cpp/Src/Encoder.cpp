@@ -41,12 +41,12 @@ struct SThreadData
 class CEncodedPixelData
 {
 public:
-    CEncodedPixelData (const CImageDataRGBA& src, CImageDataRGBA& dest, const SSettings& settings)
+    CEncodedPixelData(const CImageDataRGBA& src, CImageDataRGBA& dest, const SSettings& settings)
         : m_src(src)
         , m_dest(dest)
-		, m_nextPixel(static_cast<size_t>(-1))
-		, m_nextAngle(static_cast<size_t>(-1))
-		, c_radialPixelCount(dest.GetHeight() << 8)
+        , m_nextPixel(static_cast<size_t>(-1))
+        , m_nextAngle(static_cast<size_t>(-1))
+        , c_radialPixelCount(dest.GetHeight() << 8)
 		, c_angleCount(dest.GetHeight())
 		, c_centerX((float)src.GetWidth() / 2.0f)
 		, c_centerY((float)src.GetHeight() / 2.0f)
@@ -64,22 +64,22 @@ public:
 
     typedef std::vector<bool>			TRadialPixels;
     typedef std::vector<unsigned char>	TAngleRange;
-    typedef std::vector<TAngleRange>		TAngleRanges;
+    typedef std::vector<TAngleRange>	TAngleRanges;
 
 	//----------------------------------------------------------------------------------------------------------
     bool Encode ()
 	{
-		// make a thread slot for each core we have available, making sure to at least have 1 thread.
-		// also create a threaddata object per thread
+        // make a thread slot for each core we have available, making sure to at least have 1 thread.
+        // also create a threaddata object per thread
         auto numThreads = std::thread::hardware_concurrency();
-		numThreads = 1;//max(numThreads, static_cast<decltype(numThreads)>(1));
-        std::vector<std::thread> threads(numThreads);
-		m_threadData.resize(numThreads);
-		Platform::ReportError("Encoding with %i threads", numThreads);		
+        numThreads = std::max(numThreads, static_cast<decltype(numThreads)>(1));
+        std::vector<std::thread> threads;
+        m_threadData.resize(numThreads);
+        Platform::ReportError("Encoding with %i threads", numThreads);		
 
-		// Calculate our radial pixels using as many threads as we have cores for and wait for them to finish
-		for (size_t i = 0, c = threads.size(); i < c; ++i)
-            threads[i] = std::thread([this, i]() { CalcRadialPixelsMT(m_threadData[i]); });
+        // Calculate our radial pixels using as many threads as we have cores for and wait for them to finish
+        for (size_t i = 0, c = numThreads; i < c; ++i)
+            threads.push_back(std::thread([this, i]() { CalcRadialPixelsMT(m_threadData[i]); }));
         for_each(threads.begin(), threads.end(), [](std::thread& t) { t.join(); });
 
 		// we now have the color of each radial pixel, we need to use those to make black/white distances for
@@ -244,15 +244,15 @@ private:
         maxY = std::min(maxY, c_maxY);
 
 		// for each pixel in the bounding box
-        size_t sx = (size_t)minX;
-        size_t sy = (size_t)minY;
-        size_t ex = (size_t)maxX;
-        size_t ey = (size_t)maxY;
+        int sx = (int)minX;
+        int sy = (int)minY;
+        int ex = (int)maxX;
+        int ey = (int)maxY;
 		float triangleTotal = 0.0f;
         std::array<float, 4> pixelData;
-		for (size_t iy = sy; iy <= ey; ++iy)
+        for (int iy = sy; iy <= ey; ++iy)
 		{
-            for (size_t ix = sx; ix <= ex; ++ix)
+            for (int ix = sx; ix <= ex; ++ix)
 			{
 				// make the source polygon
 				//SThreadData threadData;
@@ -326,7 +326,7 @@ private:
 				}
 
 				// black pixels subtract from the total, white pixels add into the total
-				m_src.GetPixel(ix, iy, pixelData);
+				m_src.GetPixel((float)ix, (float)iy, pixelData);
 				float multiplier =  pixelData[0] > 0 ? 1.0f : -1.0f;
 
 				// add area of polygon into triangleTotal, using ear clipping.  The polygon is garaunteed convex since it's
@@ -416,7 +416,7 @@ private:
 	void CalcRadialPixelsMT (SThreadData& threadData)
 	{
 		// grab pixels until we are out of range
-		auto pixel = ++m_nextPixel;
+		unsigned int pixel = ++m_nextPixel;
 		while (pixel < c_radialPixelCount)
 		{
 			// calculate the distance range

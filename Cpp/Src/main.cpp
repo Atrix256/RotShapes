@@ -301,7 +301,27 @@ int wmain (int argc, wchar_t **argv)
 {
 	
     /*
+    // ===== TODOS =====
+
+    ! fix thread concurrency problem in encoder... wtf?
+    ! get decoder using multiple threads?
+
+    ? maybe also need to not convert to black/white but greyscale instead?
+    
+    * make some batch files that take source images, make encoded version, decode them again, do animations, etc.
+     * only check source images into repository
+
+     ? get rid of "web" implementation? kinda useless at this point it seems
+
 	// ===== FEATURE TODOS =====
+
+    ? maybe have a 0-127 version, where the top bit specifies whether you should blend to the next angle or not for that slot?
+     * bummer: we cut our uniuque distance values in half.
+     ? can we do it a different way, like if B < G, that means to not blend?
+     * or we could like, make A be 4 bits, and make it a scaled delta from B? use the rest of the 4 bits from A as the blend flags?
+
+
+
 
     ! next most major feature remaining = blending between pie slices when we should, and not when we shouldn't.
      * could maybe have two modes of operation. One = like it is (heuristic per image?).  Other = 2 pixels per cone.

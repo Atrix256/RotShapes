@@ -23,7 +23,6 @@
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
 
@@ -35,3 +34,6 @@ Cpp/Debug/*.*
 Cpp/Release/*.*
 *.ipch
 *.opensdf
+*.ilk
+*.pdb
+DAPSE_D.exe
