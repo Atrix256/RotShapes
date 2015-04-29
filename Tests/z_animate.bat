@@ -1,3 +1,4 @@
+mkdir Images
 "../CPP/DAPSE.exe" -encode ../Assets/batman_src.png Images/anim1.png 256
 "../CPP/DAPSE.exe" -encode ../Assets/face_src.bmp Images/anim2.png 256
 "../CPP/DAPSE.exe" -encode ../Assets/female_src.png Images/anim3.png 256
@@ -14,4 +15,4 @@
 "../CPP/DAPSE.exe" -combine Images/anim.png Images/anim7.png Images/anim.png 
 "../CPP/DAPSE.exe" -combine Images/anim.png Images/anim1.png Images/anim.png 
 
-"../CPP/DAPSE.exe" -animate Images/animated.gif 30 1 -decode Images/anim.png Images/animo%%i.png 1024 1024 -debugcolors Images/animodc%%i.png -filtersmart -aa
+"../CPP/DAPSE.exe" -animate Images/animated.gif 30 5 -decode Images/anim.png Images/animo%%i.png 1024 1024 -debugcolors Images/animodc%%i.png -filtersmart -aa

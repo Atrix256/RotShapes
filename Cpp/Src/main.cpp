@@ -303,13 +303,13 @@ int wmain (int argc, wchar_t **argv)
     /*
     // ===== TODOS =====
 
-    ! fix thread concurrency problem in encoder... wtf?
-    ! get decoder using multiple threads?
+    ! fix the new issue w/ the diagonal line artifacts (due to getpixel / setpixel work?)
 
-    ? maybe also need to not convert to black/white but greyscale instead?
-    
-    * make some batch files that take source images, make encoded version, decode them again, do animations, etc.
-     * only check source images into repository
+    ! make a test that shows radial pixels?
+
+    ! greyscale instead of black and white intermediate image, i think it'll give better quality results (less weird artifacts)
+
+    ! could make the encoder only do an atomic increment to claim the next N (10? 100?) work items.  less interlocked work.
 
      ? get rid of "web" implementation? kinda useless at this point it seems
 
@@ -340,7 +340,7 @@ int wmain (int argc, wchar_t **argv)
 
     
     // ===== MAYBE FEATURES
-    // TODO: option for a single 32 bit distance for encoding & decoding!
+    // TODO: option for a single 32 bit distance for encoding & decoding?
     // TODO: Layering and color tint decoding? for demos
     // TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
     // maybe try one of the averages (like, geometric, or something)
@@ -349,9 +349,8 @@ int wmain (int argc, wchar_t **argv)
     // ===== PROGRAM TODOS =====
     // TODO: distance seems to round up from left corner.  should round based on center i think
     // TODO: make asserts happen in release too!
-    // TODO: make it so we can use all the threads again
-    // TODO: maybe do (animation?) decoding across threads? decoding only, not disk i/o!
     // TODO: force the encoded image (and other images?) to always be png extension and type somehow? (and gif for animated files)
+    // TODO: async file io, so we can dump to disk and keep working?
 
     */
 

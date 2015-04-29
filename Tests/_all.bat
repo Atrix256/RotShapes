@@ -1,8 +1,8 @@
-batman.bat
-face.bat
-female.bat
-frame.bat
-male.bat
-malefemale.bat
-test.bat
-z_animate.bat
+call batman.bat
+call face.bat
+call female.bat
+call frame.bat
+call male.bat
+call malefemale.bat
+call test.bat
+call z_animate.bat
