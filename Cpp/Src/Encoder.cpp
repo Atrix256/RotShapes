@@ -62,7 +62,7 @@ public:
         assert(dest.GetWidth() == 1);
     }
 
-    typedef std::vector<bool>			TRadialPixels;
+    typedef std::vector<unsigned char>	TRadialPixels;
     typedef std::vector<unsigned char>	TAngleRange;
     typedef std::vector<TAngleRange>	TAngleRanges;
 
@@ -163,7 +163,8 @@ private:
 			size_t base = angle << 8;
 			for (size_t dist = 0; dist < 256; ++dist)
 			{
-				if (m_radialPixels[base + dist] != white)
+                bool pixelValue = !!m_radialPixels[base + dist];
+                if (pixelValue != white)
 				{
 					range.push_back(dist);
 					white = !white;

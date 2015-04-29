@@ -62,7 +62,7 @@ namespace Platform
         IWICBitmapFrameDecode* frame = NULL;
         IWICBitmap* bitmap = NULL;
         IWICBitmapSource * convertedBitmap = NULL;
-		IWICBitmapSource * convertedBitmap2 = NULL;
+        IWICBitmapSource * convertedBitmap2 = NULL;
         unsigned char* pixels = NULL;
 
         do {
@@ -127,36 +127,36 @@ namespace Platform
                 break;
             }
 
-			// if we need black and white, make it so
-			if (convertToBlackWhite)
-			{
-				// convert to black and white 1 bit per pixel
-				hr = WICConvertBitmapSource(GUID_WICPixelFormatBlackWhite, bitmap, &convertedBitmap);
-				if (!SUCCEEDED(hr) || !convertedBitmap)
-				{
-					ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image to black and white");
-					ret = false;
-					break;
-				}
+            // if we need black and white, make it so
+            if (convertToBlackWhite)
+            {
+                // convert to black and white 1 bit per pixel
+                hr = WICConvertBitmapSource(GUID_WICPixelFormatBlackWhite, bitmap, &convertedBitmap);
+                if (!SUCCEEDED(hr) || !convertedBitmap)
+                {
+                    ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image to black and white");
+                    ret = false;
+                    break;
+                }
 
-				// convert back to 32 bit color
-				hr = WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, convertedBitmap, &convertedBitmap2);
-				if (!SUCCEEDED(hr) || !convertedBitmap2)
-				{
-					ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image from black and white");
-					ret = false;
-					break;
-				}
-			}
+                // convert back to 32 bit color
+                hr = WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, convertedBitmap, &convertedBitmap2);
+                if (!SUCCEEDED(hr) || !convertedBitmap2)
+                {
+                    ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image from black and white");
+                    ret = false;
+                    break;
+                }
+            }
 
             UINT stride = width*4;
             UINT bufferSize = stride*height;
             pixels = new unsigned char[bufferSize];
             WICRect rc = {0, 0, width, height};
-			if (convertToBlackWhite)
-				hr = convertedBitmap2->CopyPixels(&rc,stride,bufferSize,pixels);
-			else
-				hr = bitmap->CopyPixels(&rc,stride,bufferSize,pixels);
+            if (convertToBlackWhite)
+                hr = convertedBitmap2->CopyPixels(&rc,stride,bufferSize,pixels);
+            else
+                hr = bitmap->CopyPixels(&rc,stride,bufferSize,pixels);
             if (!SUCCEEDED(hr))
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not copy pixel data");
@@ -266,7 +266,7 @@ namespace Platform
             // set the pixel format of the frame
             WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat32bppBGRA;  //(GUID_WICPixelFormat32bppRGBA ??)
             hr = frameEncode->SetPixelFormat(&pixelFormat);
-			if (!SUCCEEDED(hr) || pixelFormat != GUID_WICPixelFormat32bppBGRA)
+            if (!SUCCEEDED(hr) || pixelFormat != GUID_WICPixelFormat32bppBGRA)
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: set frame pixel format");
                 ret = false;
@@ -314,19 +314,19 @@ namespace Platform
         return ret;
     }
 
-	//--------------------------------------------------------------------------------------------------------------
-	bool SameAnimatedImageFile (const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps)
-	{
-		bool ret = true;
+    //--------------------------------------------------------------------------------------------------------------
+    bool SameAnimatedImageFile (const wchar_t* fileName, const std::vector<CImageDataRGBA>& frames, unsigned int fps)
+    {
+        bool ret = true;
         IWICBitmapEncoder* encoder = NULL;
         IWICStream* stream = NULL;
         IWICBitmapFrameEncode* frameEncode = NULL;
-		IWICPalette *palette = NULL;
-		IWICMetadataQueryWriter *frameMetadataQueryWriter = NULL;
-		IWICMetadataQueryWriter *encoderMetadataQueryWriter = NULL;
+        IWICPalette *palette = NULL;
+        IWICMetadataQueryWriter *frameMetadataQueryWriter = NULL;
+        IWICMetadataQueryWriter *encoderMetadataQueryWriter = NULL;
 
-		PROPVARIANT propValue;
-		PropVariantInit(&propValue);
+        PROPVARIANT propValue;
+        PropVariantInit(&propValue);
 
         do {
             HRESULT hr = s_factory->CreateEncoder(GUID_ContainerFormatGif, nullptr, &encoder);
@@ -361,7 +361,7 @@ namespace Platform
                 break;
             }
 
-			hr = encoder->GetMetadataQueryWriter(&encoderMetadataQueryWriter);
+            hr = encoder->GetMetadataQueryWriter(&encoderMetadataQueryWriter);
             if (!SUCCEEDED(hr))
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't get encoder's frame meta data query writer");
@@ -369,180 +369,180 @@ namespace Platform
                 break;
             }
 
-			// We have to write the "/appext/application/NETSCAPE2.0" value into the global metadata.
-			propValue.vt = VT_UI1 | VT_VECTOR;
-			propValue.caub.cElems = 11;
-			propValue.caub.pElems = new UCHAR[11];
-			memcpy(propValue.caub.pElems, "NETSCAPE2.0", 11);
-			hr = encoderMetadataQueryWriter->SetMetadataByName(L"/appext/Application",&propValue);
+            // We have to write the "/appext/application/NETSCAPE2.0" value into the global metadata.
+            propValue.vt = VT_UI1 | VT_VECTOR;
+            propValue.caub.cElems = 11;
+            propValue.caub.pElems = new UCHAR[11];
+            memcpy(propValue.caub.pElems, "NETSCAPE2.0", 11);
+            hr = encoderMetadataQueryWriter->SetMetadataByName(L"/appext/Application",&propValue);
             if (!SUCCEEDED(hr))
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't write application");
                 ret = false;
                 break;
             }
-			delete[] propValue.caub.pElems;
-			propValue.caub.pElems = NULL;
-			PropVariantClear(&propValue);
+            delete[] propValue.caub.pElems;
+            propValue.caub.pElems = NULL;
+            PropVariantClear(&propValue);
 
-			// Set animated GIF format
-			propValue.vt = VT_UI1 | VT_VECTOR;
-			propValue.caub.cElems = 5;
-			propValue.caub.pElems = new UCHAR[5];
-			*(propValue.caub.pElems) = 3; // must be > 1,
-			*(propValue.caub.pElems + 1) = 1; // defines animated GIF
-			*(propValue.caub.pElems + 2) = 0; // LSB 0 = infinite loop.
-			*(propValue.caub.pElems + 3) = 0; // MSB of iteration count value
-			*(propValue.caub.pElems + 4) = 0; // NULL == end of data
-			hr = encoderMetadataQueryWriter->SetMetadataByName(L"/appext/Data",&propValue);
+            // Set animated GIF format
+            propValue.vt = VT_UI1 | VT_VECTOR;
+            propValue.caub.cElems = 5;
+            propValue.caub.pElems = new UCHAR[5];
+            *(propValue.caub.pElems) = 3; // must be > 1,
+            *(propValue.caub.pElems + 1) = 1; // defines animated GIF
+            *(propValue.caub.pElems + 2) = 0; // LSB 0 = infinite loop.
+            *(propValue.caub.pElems + 3) = 0; // MSB of iteration count value
+            *(propValue.caub.pElems + 4) = 0; // NULL == end of data
+            hr = encoderMetadataQueryWriter->SetMetadataByName(L"/appext/Data",&propValue);
             if (!SUCCEEDED(hr))
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't write data");
                 ret = false;
                 break;
             }
-			delete[] propValue.caub.pElems;
-			propValue.caub.pElems = NULL;
-			PropVariantClear(&propValue);
-			propValue.vt = VT_LPSTR;
-			propValue.pszVal = "Yo dude"; // use new-delete[] calls
-			hr = encoderMetadataQueryWriter->SetMetadataByName(L"/commentext/TextEntry",&propValue);
+            delete[] propValue.caub.pElems;
+            propValue.caub.pElems = NULL;
+            PropVariantClear(&propValue);
+            propValue.vt = VT_LPSTR;
+            propValue.pszVal = "Yo dude"; // use new-delete[] calls
+            hr = encoderMetadataQueryWriter->SetMetadataByName(L"/commentext/TextEntry",&propValue);
             if (!SUCCEEDED(hr))
             {
                 ReportErrorHRESULT(hr,__FUNCTION__" Failed: couldn't write text entry");
                 ret = false;
                 break;
             }
-			propValue.pszVal = NULL;
-			PropVariantClear(&propValue);
-			
-			// create a palette
-			hr = s_factory->CreatePalette(&palette);
-			if (!SUCCEEDED(hr) || palette == NULL)
-			{
-				ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not create palette");
-				ret = false;
-				break;
-			}
+            propValue.pszVal = NULL;
+            PropVariantClear(&propValue);
+            
+            // create a palette
+            hr = s_factory->CreatePalette(&palette);
+            if (!SUCCEEDED(hr) || palette == NULL)
+            {
+                ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not create palette");
+                ret = false;
+                break;
+            }
 
-			// make it a black and white palette
-			hr = palette->InitializePredefined(WICBitmapPaletteTypeFixedGray256, false);
-			if (!SUCCEEDED(hr))
-			{
-				ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not make greyscale palette");
-				ret = false;
-				break;
-			}
+            // make it a black and white palette
+            hr = palette->InitializePredefined(WICBitmapPaletteTypeFixedGray256, false);
+            if (!SUCCEEDED(hr))
+            {
+                ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not make greyscale palette");
+                ret = false;
+                break;
+            }
 
-			// for each frame in the image
-			WORD timeBucket = 0;
-			for (unsigned int frameIndex = 0; frameIndex < frames.size(); ++frameIndex)
-			{
-				// create a new frame for our image data
-				hr = encoder->CreateNewFrame(&frameEncode, nullptr);
-				if (!SUCCEEDED(hr) || !frameEncode)
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: couldn't create new frame ");
-					ret = false;
-					break;
-				}
+            // for each frame in the image
+            WORD timeBucket = 0;
+            for (unsigned int frameIndex = 0; frameIndex < frames.size(); ++frameIndex)
+            {
+                // create a new frame for our image data
+                hr = encoder->CreateNewFrame(&frameEncode, nullptr);
+                if (!SUCCEEDED(hr) || !frameEncode)
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: couldn't create new frame ");
+                    ret = false;
+                    break;
+                }
 
-				// initialize the frame
-				hr = frameEncode->Initialize(NULL);
-				if (!SUCCEEDED(hr))
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: encoded frame initialize ");
-					ret = false;
-					break;
-				}
+                // initialize the frame
+                hr = frameEncode->Initialize(NULL);
+                if (!SUCCEEDED(hr))
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: encoded frame initialize ");
+                    ret = false;
+                    break;
+                }
 
-				// set the size of the frame
-				hr = frameEncode->SetSize(frames[frameIndex].GetWidth(), frames[frameIndex].GetHeight());
-				if (!SUCCEEDED(hr))
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: set frame size");
-					ret = false;
-					break;
-				}
+                // set the size of the frame
+                hr = frameEncode->SetSize(frames[frameIndex].GetWidth(), frames[frameIndex].GetHeight());
+                if (!SUCCEEDED(hr))
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: set frame size");
+                    ret = false;
+                    break;
+                }
 
-				// set the pixel format of the frame
-				WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat8bppIndexed; //GUID_WICPixelFormatBlackWhite
-				hr = frameEncode->SetPixelFormat(&pixelFormat);
-				if (!SUCCEEDED(hr) || pixelFormat != GUID_WICPixelFormat8bppIndexed)
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: set frame pixel format");
-					ret = false;
-					break;
-				}
+                // set the pixel format of the frame
+                WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat8bppIndexed; //GUID_WICPixelFormatBlackWhite
+                hr = frameEncode->SetPixelFormat(&pixelFormat);
+                if (!SUCCEEDED(hr) || pixelFormat != GUID_WICPixelFormat8bppIndexed)
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: set frame pixel format");
+                    ret = false;
+                    break;
+                }
 
-				// set the palette of the image
-				hr = frameEncode->SetPalette(palette);
-				if (!SUCCEEDED(hr))
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not set palette");
-					ret = false;
-					break;
-				}
+                // set the palette of the image
+                hr = frameEncode->SetPalette(palette);
+                if (!SUCCEEDED(hr))
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not set palette");
+                    ret = false;
+                    break;
+                }
 
-				// copy the pixels
-				BYTE *convertedData = new BYTE[frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight()];
-				for (size_t iy = 0, iyc = frames[frameIndex].GetHeight(); iy < iyc; ++iy)
-				{
+                // copy the pixels
+                BYTE *convertedData = new BYTE[frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight()];
+                for (size_t iy = 0, iyc = frames[frameIndex].GetHeight(); iy < iyc; ++iy)
+                {
                     for (size_t ix = 0, ixc = frames[frameIndex].GetWidth(); ix < ixc; ++ix)
-					{
-						std::array<float, 4> pixel;
-						frames[frameIndex].GetPixel(ix, iy, pixel);
-						//convertedData[iy*ixc + ix] = pixel[0] > 0.5f ? 1 : 0;
-						convertedData[iy*ixc + ix] = (BYTE)pixel[0];
-					}
-				}
-				hr = frameEncode->WritePixels(frames[frameIndex].GetHeight(), frames[frameIndex].GetWidth(), frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight(), convertedData);
-				delete[] convertedData;
-				if (!SUCCEEDED(hr))
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: frame write pixels");
-					ret = false;
-					break;
-				}
+                    {
+                        std::array<float, 4> pixel;
+                        frames[frameIndex].GetPixel(ix, iy, pixel);
+                        //convertedData[iy*ixc + ix] = pixel[0] > 0.5f ? 1 : 0;
+                        convertedData[iy*ixc + ix] = (BYTE)pixel[0];
+                    }
+                }
+                hr = frameEncode->WritePixels(frames[frameIndex].GetHeight(), frames[frameIndex].GetWidth(), frames[frameIndex].GetWidth()*frames[frameIndex].GetHeight(), convertedData);
+                delete[] convertedData;
+                if (!SUCCEEDED(hr))
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: frame write pixels");
+                    ret = false;
+                    break;
+                }
 
-				// get a meta data query writer
-				hr = frameEncode->GetMetadataQueryWriter(&frameMetadataQueryWriter);
-				if (!SUCCEEDED(hr) || !frameMetadataQueryWriter)
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not get meta data query writer");
-					ret = false;
-					break;
-				}
+                // get a meta data query writer
+                hr = frameEncode->GetMetadataQueryWriter(&frameMetadataQueryWriter);
+                if (!SUCCEEDED(hr) || !frameMetadataQueryWriter)
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not get meta data query writer");
+                    ret = false;
+                    break;
+                }
 
-				// commit the frame
-				hr = frameEncode->Commit();
-				if (!SUCCEEDED(hr))
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: frame commit");
-					ret = false;
-					break;
-				}
-				
-				// set the frame delay
-				WORD targetTime = (WORD)(100.0f*(float)(frameIndex+1) / (float)fps);
-				propValue.vt = VT_UI2;
-				propValue.uiVal = targetTime - timeBucket;
-				timeBucket = targetTime;
-				hr = frameMetadataQueryWriter->SetMetadataByName(L"/grctlext/Delay", &propValue);
-				PropVariantClear(&propValue);
-				if (!SUCCEEDED(hr))
-				{
-					ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not set delay metadata");
-					ret = false;
-					break;
-				}
+                // commit the frame
+                hr = frameEncode->Commit();
+                if (!SUCCEEDED(hr))
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: frame commit");
+                    ret = false;
+                    break;
+                }
+                
+                // set the frame delay
+                WORD targetTime = (WORD)(100.0f*(float)(frameIndex+1) / (float)fps);
+                propValue.vt = VT_UI2;
+                propValue.uiVal = targetTime - timeBucket;
+                timeBucket = targetTime;
+                hr = frameMetadataQueryWriter->SetMetadataByName(L"/grctlext/Delay", &propValue);
+                PropVariantClear(&propValue);
+                if (!SUCCEEDED(hr))
+                {
+                    ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not set delay metadata");
+                    ret = false;
+                    break;
+                }
 
-				frameMetadataQueryWriter->Release();
-				frameMetadataQueryWriter = NULL;
+                frameMetadataQueryWriter->Release();
+                frameMetadataQueryWriter = NULL;
 
-				frameEncode->Release();
-				frameEncode = NULL;
-			}
+                frameEncode->Release();
+                frameEncode = NULL;
+            }
 
             // commit the encoder
             hr = encoder->Commit();
@@ -555,14 +555,14 @@ namespace Platform
         }
         while(0);
 
-		if (encoderMetadataQueryWriter)
-			encoderMetadataQueryWriter->Release();
+        if (encoderMetadataQueryWriter)
+            encoderMetadataQueryWriter->Release();
 
-		if (frameMetadataQueryWriter)
-			frameMetadataQueryWriter->Release();
+        if (frameMetadataQueryWriter)
+            frameMetadataQueryWriter->Release();
 
-		if (palette)
-			palette->Release();
+        if (palette)
+            palette->Release();
 
         if (frameEncode)
             frameEncode->Release();
@@ -574,7 +574,7 @@ namespace Platform
             encoder->Release();
 
         return ret;
-	}
+    }
 
     //--------------------------------------------------------------------------------------------------------------
     void ReportError (const char* format, ...)

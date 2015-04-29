@@ -37,3 +37,4 @@ Cpp/Release/*.*
 *.ilk
 *.pdb
 DAPSE_D.exe
+Tests/Images/*.*
