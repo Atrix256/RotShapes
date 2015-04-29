@@ -52,7 +52,7 @@ namespace Platform
     }
 
     //--------------------------------------------------------------------------------------------------------------
-    bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData, bool convertToBlackWhite)
+    bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData, bool convertToGrayScale)
     {
         // taken from http://msdn.microsoft.com/en-us/library/ee719794(v=vs.85).aspx
         // and http://msdn.microsoft.com/en-us/library/windows/desktop/ee719661%28v=vs.85%29.aspx
@@ -127,14 +127,14 @@ namespace Platform
                 break;
             }
 
-            // if we need black and white, make it so
-            if (convertToBlackWhite)
+            // if we need grayscale, make it so
+            if (convertToGrayScale)
             {
-                // convert to black and white 1 bit per pixel
-                hr = WICConvertBitmapSource(GUID_WICPixelFormatBlackWhite, bitmap, &convertedBitmap);
+                // convert to 8 bit per pixel grayscale (256 shades of gray)
+                hr = WICConvertBitmapSource(GUID_WICPixelFormat8bppGray, bitmap, &convertedBitmap);
                 if (!SUCCEEDED(hr) || !convertedBitmap)
                 {
-                    ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image to black and white");
+                    ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image to grayscale");
                     ret = false;
                     break;
                 }
@@ -143,7 +143,7 @@ namespace Platform
                 hr = WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, convertedBitmap, &convertedBitmap2);
                 if (!SUCCEEDED(hr) || !convertedBitmap2)
                 {
-                    ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image from black and white");
+                    ReportErrorHRESULT(hr,__FUNCTION__" Failed: could not convert image from grayscale");
                     ret = false;
                     break;
                 }
@@ -153,7 +153,7 @@ namespace Platform
             UINT bufferSize = stride*height;
             pixels = new unsigned char[bufferSize];
             WICRect rc = {0, 0, width, height};
-            if (convertToBlackWhite)
+            if (convertToGrayScale)
                 hr = convertedBitmap2->CopyPixels(&rc,stride,bufferSize,pixels);
             else
                 hr = bitmap->CopyPixels(&rc,stride,bufferSize,pixels);
@@ -425,11 +425,11 @@ namespace Platform
                 break;
             }
 
-            // make it a black and white palette
+            // make it a grayscale palette
             hr = palette->InitializePredefined(WICBitmapPaletteTypeFixedGray256, false);
             if (!SUCCEEDED(hr))
             {
-                ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not make greyscale palette");
+                ReportErrorHRESULT(hr, __FUNCTION__" Failed: could not make grayscale palette");
                 ret = false;
                 break;
             }

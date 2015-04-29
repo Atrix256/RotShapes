@@ -13,7 +13,7 @@ namespace Platform
     bool Init ();
     void Shutdown ();
 
-    bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData, bool convertToBlackWhite);
+    bool LoadImageFile (const wchar_t* fileName, CImageDataRGBA& imageData, bool convertToGrayScale);
 
     bool SaveImageFile (const wchar_t* fileName, const CImageDataRGBA& imageData);
 

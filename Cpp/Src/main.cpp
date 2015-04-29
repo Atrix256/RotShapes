@@ -116,12 +116,12 @@ bool ParseCommandLine (SSettings& settings, int argc, wchar_t **argv)
             }
             ++index;
         }
-        else if (!_wcsicmp(argv[index], L"-bw"))
+        else if (!_wcsicmp(argv[index], L"-gray"))
         {
             ++index;
             if (index >= argc)
             {
-                Platform::ReportError("no file specified for black/white converted source image");
+                Platform::ReportError("no file specified for grayscale converted source image");
                 return false;
             }
             settings.m_encoding.m_convertedFile = argv[index];
@@ -187,8 +187,8 @@ void PrintUsage()
     Platform::ReportError("  -decode <source> <destination> <width> <height>");
     Platform::ReportError("    decode the <source> file into an image that is <width> x <height> in\n    resolution and saves it as <destination>.\n");
     Platform::ReportError("Encoding Options:");
-    Platform::ReportError("  -bw <filename>");
-    Platform::ReportError("    Save the source image converted to black & white to <filename>.\n");
+    Platform::ReportError("  -gray <filename>");
+    Platform::ReportError("    Save the source image converted to grayscale to <filename>.\n");
     Platform::ReportError("Decoding Options:");
     Platform::ReportError("  -debugcolors <filename>");
     Platform::ReportError("    decode the encoded regions as black, red, green, blue, white and save it as\n    <filename>.\n");
@@ -303,11 +303,17 @@ int wmain (int argc, wchar_t **argv)
     /*
     // ===== TODOS =====
 
+    ! work on grayscale encoding more.  it seems to have degraded things a bit.
+     * this is especially true of images like the female sign which had some grey in them already.
+     ? maybe convert to BW then to gray? i dunno... or threshold the grey perhaps?
+
+    ! make a color image test!
+
+    ! anti aliasing doesn't seem to be working in the tests (the decoded images)
+
     ! fix the new issue w/ the diagonal line artifacts (due to getpixel / setpixel work?)
 
     ! make a test that shows radial pixels?
-
-    ! greyscale instead of black and white intermediate image, i think it'll give better quality results (less weird artifacts)
 
     ! could make the encoder only do an atomic increment to claim the next N (10? 100?) work items.  less interlocked work.
 
