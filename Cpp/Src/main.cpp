@@ -209,7 +209,7 @@ void PrintUsage()
     Platform::ReportError("  -sqdist");
     Platform::ReportError("    Store squared distance instead of regular distance.\n");
     Platform::ReportError("Other Options:");
-    Platform::ReportError("  -append <sourceA> <sourceB> <destination>");
+    Platform::ReportError("  -combine <sourceA> <sourceB> <destination>");
     Platform::ReportError("    This will combine the encoded frames of images <sourceA> and <sourceB> and\n    save the result as <destination>. Useful for animations or sprite sheets.\n    <sourceA> and <sourceB> must be the same height.\n");
 }
 
