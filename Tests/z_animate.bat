@@ -15,4 +15,4 @@ mkdir Images
 "../CPP/DAPSE.exe" -combine Images/anim.png Images/anim7.png Images/anim.png 
 "../CPP/DAPSE.exe" -combine Images/anim.png Images/anim1.png Images/anim.png 
 
-"../CPP/DAPSE.exe" -animate Images/animated.gif 30 5 -decode Images/anim.png Images/animo%%i.png 1024 1024 -debugcolors Images/animodc%%i.png -filtersmart -aa
+"../CPP/DAPSE.exe" -animate Images/animated.gif 30 5 -decode Images/anim.png Images/animo%%i.png 512 512 -debugcolors Images/animodc%%i.png -filtersmart -aa

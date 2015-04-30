@@ -303,7 +303,12 @@ int wmain (int argc, wchar_t **argv)
     /*
     // ===== TODOS =====
 
+    ? how does 128 distances look vs 256?
+
     ! next the 0-127 version with the "blend or not" bit?  bilinear filtering out the window though ):
+
+    ? maybe manually specify which things can and cannot be lerped between.  manual fix up when it goes wrong.
+     * for animation, if < 0.5, use the last frame, else use the next frame?
 
     // ===== FEATURE TODOS =====
 

@@ -235,25 +235,52 @@ void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool 
     DecodeInternal(src, frame, decodedOffset[2], debugColors, settings, -1.0f / 8.0f, -3.0f / 8.0f);
     DecodeInternal(src, frame, decodedOffset[3], debugColors, settings, -3.0f / 8.0f,  1.0f / 8.0f);
 
-    // Average the 4 samples per pixel to get the final AA'd image
-    for (size_t y = 0, yc = dest.GetHeight(); y < yc; ++y)
+    // spin up all available cores to help do blending work between the decoded images.
+    // one work item = one row of output data
+    // average the pixels from each decoded frame to get each output pixel
+    size_t height = dest.GetHeight();
+    size_t stride = dest.GetStride();
+    size_t widthBytes = dest.GetWidth() * 4;
+    std::atomic<size_t> nextRow(static_cast<size_t>(-1));
+    auto numThreads = std::thread::hardware_concurrency();
+    numThreads = std::max(numThreads, static_cast<decltype(numThreads)>(1));
+    std::vector<std::thread> threads;
+    for (size_t i = 0, c = numThreads; i < c; ++i)
     {
-        for (size_t x = 0, xc = dest.GetWidth(); x < xc; ++x)
-        {
-            std::array<float, 4> blendedPixel;
-            std::fill(blendedPixel.begin(), blendedPixel.end(), 0.0f);
-
-            for (size_t i = 0; i < 4; ++i)
-            {
-                std::array<float, 4> offsetPixel;
-                decodedOffset[i].GetPixel(x, y, offsetPixel);
-                for (size_t pixel = 0; pixel < 4; ++pixel)
+        threads.push_back(
+            std::thread(
+                [&]()
                 {
-                    blendedPixel[pixel] += offsetPixel[pixel] * 0.25f;
-                }
-            }
+                    size_t row = ++nextRow;
+                    while (row < height)
+                    {
+                        unsigned char* destPixel = dest.GetPixelBuffer() + stride*row;
+                        unsigned char* srcPixel1 = decodedOffset[0].GetPixelBuffer() + stride*row;
+                        unsigned char* srcPixel2 = decodedOffset[1].GetPixelBuffer() + stride*row;
+                        unsigned char* srcPixel3 = decodedOffset[2].GetPixelBuffer() + stride*row;
+                        unsigned char* srcPixel4 = decodedOffset[3].GetPixelBuffer() + stride*row;
 
-            dest.SetPixel(x, y, blendedPixel);
-        }
+                        size_t x = widthBytes;
+                        while (x)
+                        {
+                            float avg = ((float)*srcPixel1) + ((float)*srcPixel2) + ((float)*srcPixel3) + ((float)*srcPixel4);
+                            avg *= 0.25f;
+                            avg = std::min(avg, 255.0f);
+                            avg = std::max(avg, 0.0f);
+                            (*destPixel) = (unsigned char)avg;
+                            ++destPixel;
+                            ++srcPixel1;
+                            ++srcPixel2;
+                            ++srcPixel3;
+                            ++srcPixel4;
+                            --x;
+                        }
+
+                        row = ++nextRow;
+                    };
+                }
+            )
+        );
     }
+    for_each(threads.begin(), threads.end(), [](std::thread& t) { t.join(); });
 }
