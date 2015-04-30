@@ -202,7 +202,7 @@ void PrintUsage()
     Platform::ReportError("    By default, a multiframe encoded image will decode to a sheet of images.\n    When this option is specified, it makes an animated gif named\n    <destgiffile> of the animation happening over <seconds> seconds at <fps>");
     Platform::ReportError("    frames per second.  This option also assumes that the decoded filenames have    a %%i in them where you want a frame number, and will output all frames of\n    the animation used to make the gif.\n");
     Platform::ReportError("  -aa");
-    Platform::ReportError("    If specified, will use quincunx super sampled anti aliasing\n");
+    Platform::ReportError("    If specified, will use 4-rook super sampled anti aliasing\n");
     Platform::ReportError("Format Options:");
     Platform::ReportError("  -shortdist");
     Platform::ReportError("    By default, the maximum distance encodable is the length of the hypotneuse.\n    This option makes the max distance the greater of width or height.  This\n    gives more precision but rounds off the corners.\n");
@@ -303,13 +303,9 @@ int wmain (int argc, wchar_t **argv)
     /*
     // ===== TODOS =====
 
-    ! could make the encoder only do an atomic increment to claim the next N (10? 100?) work items.  less interlocked work.
-
     ! next the 0-127 version with the "blend or not" bit?  bilinear filtering out the window though ):
 
     // ===== FEATURE TODOS =====
-
-    ? 4 rook AA instead of quincunx? would need to do 4 full screen renders and blend as appropriate.  might be worth it! should look decent
 
     ? maybe make it be able to spit out raw rawdial pixels captured, before cutting it down to N ranges.  to verify what it captured.
 
@@ -324,8 +320,6 @@ int wmain (int argc, wchar_t **argv)
     ! next most major feature remaining = blending between pie slices when we should, and not when we shouldn't.
      * could maybe have two modes of operation. One = like it is (heuristic per image?).  Other = 2 pixels per cone.
 
-    ? how to deal with the artefacts like the batman thing where there's a stray black part hanging out? maybe an issue in encoding that has since been cleared up? try re-encoding maybe?
-
     * make a version that uses 2 pixels per cone, or uses one less channel for color, to have the "smart blend" threshold info be baked in or something?
     * or, maybe have 1 extra pixel to have tolarance info somehow?
     * both of these result in more pixel reads though ):
@@ -335,7 +329,7 @@ int wmain (int argc, wchar_t **argv)
 
     // TODO: expose smart filter threshold as a parameter
 
-
+    * when encoding, instead of always just removing the smallest section, could make it higher priority to keep things continuous
     
     // ===== MAYBE FEATURES
     ? get rid of "web" implementation? kinda useless at this point it seems

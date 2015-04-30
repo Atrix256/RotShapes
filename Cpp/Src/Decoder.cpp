@@ -217,65 +217,42 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
 //--------------------------------------------------------------------------------------------------------------
 void Decode (const CImageDataRGBA& src, float frame, CImageDataRGBA& dest, bool debugColors, const SSettings& settings)
 {
-    // decode the frame
-    DecodeInternal(src, frame, dest, debugColors, settings, 0.0f, 0.0f);
-
-    // if not doing AA, we are done!
+    // if not doing AA, decode the frame normally
     if (!settings.m_decoding.m_useAA)
+    {
+        DecodeInternal(src, frame, dest, debugColors, settings, 0.0f, 0.0f);
         return;
+    }
 
-    // if we are doing AA, we are doing supersampling with a quincunx pattern, so we need to decode again
-    // with half a pixel offset.
+    // Do 4-rook anti aliasing!
+    CImageDataRGBA decodedOffset[4];
+    decodedOffset[0].AllocatePixels(dest.GetWidth(), dest.GetHeight());
+    decodedOffset[1].AllocatePixels(dest.GetWidth(), dest.GetHeight());
+    decodedOffset[2].AllocatePixels(dest.GetWidth(), dest.GetHeight());
+    decodedOffset[3].AllocatePixels(dest.GetWidth(), dest.GetHeight());
+    DecodeInternal(src, frame, decodedOffset[0], debugColors, settings,  1.0f / 8.0f,  3.0f / 8.0f);
+    DecodeInternal(src, frame, decodedOffset[1], debugColors, settings,  3.0f / 8.0f, -1.0f / 8.0f);
+    DecodeInternal(src, frame, decodedOffset[2], debugColors, settings, -1.0f / 8.0f, -3.0f / 8.0f);
+    DecodeInternal(src, frame, decodedOffset[3], debugColors, settings, -3.0f / 8.0f,  1.0f / 8.0f);
 
-    // allocate pixels for all our samples
-    CImageDataRGBA destOffset;
-    destOffset.AllocatePixels(dest.GetWidth(), dest.GetHeight());
-    DecodeInternal(src, frame, destOffset, debugColors, settings, 0.5f, 0.5f);
-
-    // now, we need to combine the data from the two buffers quincunx style
+    // Average the 4 samples per pixel to get the final AA'd image
     for (size_t y = 0, yc = dest.GetHeight(); y < yc; ++y)
     {
         for (size_t x = 0, xc = dest.GetWidth(); x < xc; ++x)
         {
-            // get the center pixel
-            std::array<float, 4> centerPixel;
-            dest.GetPixel(x, y, centerPixel);
-
-            // get the corner pixels
-            std::array<std::array<float, 4>, 4> cornerPixels;
-            if (x > 0)
-                destOffset.GetPixel(x - 1, y, cornerPixels[0]);
-            else
-                cornerPixels[0] = centerPixel;
-
-            if (y > 0)
-                destOffset.GetPixel(x, y - 1, cornerPixels[1]);
-            else
-                cornerPixels[1] = centerPixel;
-
-            if (x > 0 && y > 0)
-                destOffset.GetPixel(x - 1, y - 1, cornerPixels[2]);
-            else
-                cornerPixels[2] = centerPixel;
-
-            destOffset.GetPixel(x, y, cornerPixels[3]);
-
-            // combine the center and corner pixels
             std::array<float, 4> blendedPixel;
+            std::fill(blendedPixel.begin(), blendedPixel.end(), 0.0f);
+
             for (size_t i = 0; i < 4; ++i)
             {
-                blendedPixel[i] = centerPixel[i] * 0.5f;
-                std::for_each(
-                    cornerPixels.begin(),
-                    cornerPixels.end(),
-                    [&](const std::array<float, 4>& cornerPixel)
-                    {
-                        blendedPixel[i] += cornerPixel[i] / 8.0f;
-                    }
-                );
+                std::array<float, 4> offsetPixel;
+                decodedOffset[i].GetPixel(x, y, offsetPixel);
+                for (size_t pixel = 0; pixel < 4; ++pixel)
+                {
+                    blendedPixel[pixel] += offsetPixel[pixel] * 0.25f;
+                }
             }
 
-            //write the combined pixel out
             dest.SetPixel(x, y, blendedPixel);
         }
     }
