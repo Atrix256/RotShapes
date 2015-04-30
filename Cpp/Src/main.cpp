@@ -303,6 +303,9 @@ int wmain (int argc, wchar_t **argv)
     /*
     // ===== TODOS =====
 
+    * make a color image test
+    * AA doesn't seem to be applied to the decoded images!
+
     ! fix the new issue w/ the diagonal line artifacts (due to getpixel / setpixel work?)
 
     ! make a test that shows radial pixels?
