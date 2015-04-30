@@ -303,6 +303,9 @@ int wmain (int argc, wchar_t **argv)
     /*
     // ===== TODOS =====
 
+    ! yeah... i think we just need to manually fix up source images for now.  future work: improve encoding algorithm
+    * expose "smart filter threshold" to be able to compare / contrast it in the paper
+
     ? how does 128 distances look vs 256?
      * meh.. not so good ):
      ? can we get more precision near center or something maybe?
