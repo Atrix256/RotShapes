@@ -161,7 +161,7 @@ public:
     void SetPixel (size_t x, size_t y, std::array<float, 4>& pixel) const
     {
         // mod x,y by width, height to do wrap texture mode
-        unsigned char *pixelPointer = GetPixelBuffer() + (y%GetHeight()) * GetStride() + (y%GetWidth()) * 4;
+        unsigned char *pixelPointer = GetPixelBuffer() + (y%GetHeight()) * GetStride() + (x%GetWidth()) * 4;
         pixelPointer[0] = (unsigned char)pixel[0];
         pixelPointer[1] = (unsigned char)pixel[1];
         pixelPointer[2] = (unsigned char)pixel[2];

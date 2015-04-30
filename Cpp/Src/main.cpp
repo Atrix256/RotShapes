@@ -304,19 +304,16 @@ int wmain (int argc, wchar_t **argv)
     // ===== TODOS =====
 
     * make a color image test
-    * AA doesn't seem to be applied to the decoded images!
-
-    ! fix the new issue w/ the diagonal line artifacts (due to getpixel / setpixel work?)
 
     ! make a test that shows radial pixels?
 
-    ! greyscale instead of black and white intermediate image, i think it'll give better quality results (less weird artifacts)
-
     ! could make the encoder only do an atomic increment to claim the next N (10? 100?) work items.  less interlocked work.
 
-     ? get rid of "web" implementation? kinda useless at this point it seems
+    ? get rid of "web" implementation? kinda useless at this point it seems
 
     // ===== FEATURE TODOS =====
+
+    ? maybe make it be able to spit out raw rawdial pixels captured, before cutting it down to N ranges.  to verify what it captured.
 
     ? maybe have a 0-127 version, where the top bit specifies whether you should blend to the next angle or not for that slot?
      * bummer: we cut our uniuque distance values in half.
