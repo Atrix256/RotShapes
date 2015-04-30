@@ -1,4 +1,5 @@
 call batman.bat
+call batman2.bat
 call face.bat
 call female.bat
 call frame.bat

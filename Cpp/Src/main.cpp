@@ -303,15 +303,13 @@ int wmain (int argc, wchar_t **argv)
     /*
     // ===== TODOS =====
 
-    * make a color image test
-
-    ! make a test that shows radial pixels?
-
     ! could make the encoder only do an atomic increment to claim the next N (10? 100?) work items.  less interlocked work.
 
-    ? get rid of "web" implementation? kinda useless at this point it seems
+    ! next the 0-127 version with the "blend or not" bit?  bilinear filtering out the window though ):
 
     // ===== FEATURE TODOS =====
+
+    ? 4 rook AA instead of quincunx? would need to do 4 full screen renders and blend as appropriate.  might be worth it! should look decent
 
     ? maybe make it be able to spit out raw rawdial pixels captured, before cutting it down to N ranges.  to verify what it captured.
 
@@ -340,6 +338,7 @@ int wmain (int argc, wchar_t **argv)
 
     
     // ===== MAYBE FEATURES
+    ? get rid of "web" implementation? kinda useless at this point it seems
     // TODO: option for a single 32 bit distance for encoding & decoding?
     // TODO: Layering and color tint decoding? for demos
     // TODO: or, maybe could get gradient from bilinear information and do something with that (continuity test? distance estimation?) probably better AA at least!
