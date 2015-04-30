@@ -53,8 +53,7 @@ void DecodeRowMT(size_t iy, const CImageDataRGBA& src, float frame, CImageDataRG
         {
             case ETextureFilter::e_filterNone:
             {
-                // add half a pixel to do proper rounding when not using filtering
-                src.GetPixelVanilla(frame, angle+0.5f, srcPixel);
+                src.GetPixelVanilla(frame, angle, srcPixel);
                 break;
             }
             case ETextureFilter::e_filterBilinear:
@@ -192,13 +191,13 @@ void DecodeInternal (const CImageDataRGBA& src, float frame, CImageDataRGBA& des
     if (settings.m_decoding.m_showRadialPixels)
     {
         // draw each line for the angles
-        int middlex = dest.GetWidth() / 2;
-        int middley = dest.GetHeight() / 2;
+        int middlex = (unsigned int)(OffsetX + (float)dest.GetWidth() / 2.0f);
+        int middley = (unsigned int)(OffsetY + (float)dest.GetHeight() / 2.0f);
         for (int i = src.GetHeight(); i >= 0; --i)
         {
             float angle = 2.0f*(float)M_PI*((float)(i+0.5f) / (float)(src.GetHeight()));
-            int x = (int)(cos(angle)*maxDist);
-            int y = (int)(sin(angle)*maxDist);
+            int x = (int)(OffsetX + cos(angle)*maxDist);
+            int y = (int)(OffsetY + sin(angle)*maxDist);
             dest.DrawLineClip(middlex, middley, middlex+x, middley+y, 0xFFFFFF00);
         }
 

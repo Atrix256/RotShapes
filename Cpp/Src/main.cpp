@@ -304,6 +304,8 @@ int wmain (int argc, wchar_t **argv)
     // ===== TODOS =====
 
     ? how does 128 distances look vs 256?
+     * meh.. not so good ):
+     ? can we get more precision near center or something maybe?
 
     ! next the 0-127 version with the "blend or not" bit?  bilinear filtering out the window though ):
 
